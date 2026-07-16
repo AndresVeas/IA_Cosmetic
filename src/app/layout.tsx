@@ -15,7 +15,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Lumière Lab | Análisis Dermo-Cosmético de Precisión",
+  title: "IA_Cosmetic | Análisis Dermo-Cosmético de Precisión",
   description: "Analiza tu piel con tecnología de visión computacional avanzada y recibe una recomendación dermo-cosmética personalizada.",
 };
 

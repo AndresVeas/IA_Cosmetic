@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Generate doctor-style skin diagnosis narrative
-    let recommendationText = 'Basado en el análisis de visión computacional del Lumière Lab, se presenta el siguiente diagnóstico dermo-cosmético:\n\n';
+    let recommendationText = 'Basado en el análisis de visión computacional de IA_Cosmetic, se presenta el siguiente diagnóstico dermo-cosmético:\n\n';
 
     if (finalAnomalies.includes('acne') && finalAnomalies.includes('manchas')) {
       recommendationText += 'Se observa una combinación de brotes activos de acné junto con manchas post-inflamatorias e hiperpigmentación. Recomendamos priorizar la regulación del sebo y la reparación de la barrera cutánea sin descuidar el desvanecimiento de manchas. La Niacinamide es tu ingrediente principal recomendado, ya que trata ambas condiciones simultáneamente de manera gentil.';

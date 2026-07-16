@@ -5,7 +5,7 @@ import { Camera, Sparkles, Shield, Beaker } from "lucide-react";
 export default function Home() {
   const showcaseProducts = [
     {
-      name: "Lumière Sérum Niacinamide 10% + Zinc 1%",
+      name: "IA Cosmetic Sérum Niacinamide 10% + Zinc 1%",
       type: "Producto Estrella",
       description: "Trata acné y manchas simultáneamente, regulando el sebo y unificando el tono.",
       price: "$38.00",
@@ -13,7 +13,7 @@ export default function Home() {
       tag: "Acné & Manchas"
     },
     {
-      name: "Lumière Gel Limpiador Ácido Salicílico",
+      name: "IA Cosmetic Gel Limpiador Ácido Salicílico",
       type: "Purificante",
       description: "Exfoliación profunda con BHA para destapar poros y prevenir imperfecciones.",
       price: "$26.50",
@@ -21,7 +21,7 @@ export default function Home() {
       tag: "Acné"
     },
     {
-      name: "Lumière Corrector Antimanchas Vitamina C",
+      name: "IA Cosmetic Corrector Antimanchas Vitamina C",
       type: "Iluminador",
       description: "Potente antioxidante que desvanece la hiperpigmentación y unifica el tono.",
       price: "$45.00",
@@ -34,8 +34,8 @@ export default function Home() {
     <div className="min-h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#8E7E73]/20">
       {/* Header */}
       <header className="border-b border-[#8E7E73]/10 py-6 px-8 flex justify-between items-center bg-[#FDFBF7]/80 backdrop-blur-md sticky top-0 z-50">
-        <Link href="/" className="font-serif text-2xl tracking-[0.25em] font-light text-[#1A1A1A]">
-          LUMIÈRE <span className="font-sans text-xs tracking-widest text-[#8E7E73] font-normal">LAB</span>
+        <Link href="/" className="font-serif text-2xl tracking-[0.15em] font-light text-[#1A1A1A]">
+          IA_COSMETIC
         </Link>
         <nav className="hidden md:flex gap-8 items-center text-sm tracking-widest text-[#8E7E73]">
           <a href="#metodo" className="hover:text-[#1A1A1A] transition-colors duration-300">EL MÉTODO</a>
@@ -65,7 +65,7 @@ export default function Home() {
         </h1>
 
         <p className="text-base sm:text-lg text-[#8E7E73] max-w-2xl font-light leading-relaxed mb-12">
-          Lumière fusiona la visión computacional U-Net con la formulación boutique para analizar tu rostro en tiempo real y recomendar el ritual dermo-cosmético perfecto de nuestra base de datos inteligente.
+          IA_Cosmetic fusiona la visión computacional U-Net con la formulación boutique para analizar tu rostro en tiempo real y recomendar el ritual dermo-cosmético perfecto de nuestra base de datos inteligente.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -128,7 +128,7 @@ export default function Home() {
         <div className="text-center mb-16">
           <span className="text-xs tracking-widest text-[#8E7E73] uppercase block mb-3 font-semibold">Boutique de Fórmulas</span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-light tracking-wide text-[#1A1A1A]">
-            La Colección Lumière Lab
+            La Colección IA_Cosmetic
           </h2>
         </div>
 
@@ -173,8 +173,8 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-[#8E7E73]/10 bg-[#F5EFEB]/20 py-12 px-8 text-center text-[#8E7E73] text-xs tracking-widest mt-auto">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="font-serif text-lg tracking-[0.2em] text-[#1A1A1A]">LUMIÈRE</p>
-          <p>© {new Date().getFullYear()} LUMIÈRE LAB. TODOS LOS DERECHOS RESERVADOS. CIENCIA Y BELLEZA.</p>
+          <p className="font-serif text-lg tracking-[0.15em] text-[#1A1A1A]">IA_COSMETIC</p>
+          <p>© {new Date().getFullYear()} IA_COSMETIC. TODOS LOS DERECHOS RESERVADOS. CIENCIA Y BELLEZA.</p>
         </div>
       </footer>
     </div>

@@ -201,7 +201,7 @@ export default function DiagnosticoPage() {
           <Link href="/" className="text-[#8E7E73] hover:text-[#1A1A1A] transition-colors duration-300">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <span className="font-serif text-lg tracking-[0.2em] font-light text-[#1A1A1A]">LUMIÈRE LAB</span>
+          <span className="font-serif text-lg tracking-[0.15em] font-light text-[#1A1A1A]">IA_COSMETIC</span>
         </div>
         <div className="flex gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F5EFEB] border border-[#8E7E73]/20 text-[10px] text-[#8E7E73] tracking-widest uppercase font-semibold">

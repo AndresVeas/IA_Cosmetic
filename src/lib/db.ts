@@ -10,12 +10,22 @@ export const prisma =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+export interface SkincareProduct {
+  id: string;
+  nombre: string;
+  marca: string;
+  descripcion: string;
+  precio: number;
+  imagenUrl: string;
+  imperfecciones: string[];
+}
+
 // Mock data to fallback in case the Neon database connection fails (e.g. invalid connection string)
-export const MOCK_PRODUCTS = [
+export const MOCK_PRODUCTS: SkincareProduct[] = [
   {
     id: "mock-niacinamide",
-    nombre: 'Lumière Sérum Niacinamide 10% + Zinc 1%',
-    marca: 'Lumière Lab',
+    nombre: 'IA Cosmetic Sérum Niacinamide 10% + Zinc 1%',
+    marca: 'IA_Cosmetic',
     descripcion: 'Sérum multifuncional regulador del sebo y unificador de tono. Trata imperfecciones activas y reduce hiperpigmentación de forma simultánea.',
     precio: 38.00,
     imagenUrl: '/products/niacinamide.png',
@@ -23,8 +33,8 @@ export const MOCK_PRODUCTS = [
   },
   {
     id: "mock-cleanser",
-    nombre: 'Lumière Gel Limpiador Ácido Salicílico',
-    marca: 'Lumière Lab',
+    nombre: 'IA Cosmetic Gel Limpiador Ácido Salicílico',
+    marca: 'IA_Cosmetic',
     descripcion: 'Limpiador purificante profundo con BHA para destapar poros obstruidos, controlar la producción de grasa y reducir brotes.',
     precio: 26.50,
     imagenUrl: '/products/cleanser.png',
@@ -32,8 +42,8 @@ export const MOCK_PRODUCTS = [
   },
   {
     id: "mock-vitc",
-    nombre: 'Lumière Corrector Antimanchas Vitamina C',
-    marca: 'Lumière Lab',
+    nombre: 'IA Cosmetic Corrector Antimanchas Vitamina C',
+    marca: 'IA_Cosmetic',
     descripcion: 'Potente sérum iluminador antioxidante que desvanece manchas oscuras y combate el daño de los radicales libres.',
     precio: 45.00,
     imagenUrl: '/products/vitc.png',
@@ -41,8 +51,8 @@ export const MOCK_PRODUCTS = [
   },
   {
     id: "mock-retinol",
-    nombre: 'Lumière Crema Regeneradora Retinol 0.5%',
-    marca: 'Lumière Lab',
+    nombre: 'IA Cosmetic Crema Regeneradora Retinol 0.5%',
+    marca: 'IA_Cosmetic',
     descripcion: 'Tratamiento restaurador nocturno que estimula la renovación celular, suavizando arrugas finas y mejorando la textura.',
     precio: 52.00,
     imagenUrl: '/products/retinol.png',
@@ -50,8 +60,8 @@ export const MOCK_PRODUCTS = [
   },
   {
     id: "mock-multipeptides",
-    nombre: 'Lumière Crema Hidratante Multipéptidos + AH',
-    marca: 'Lumière Lab',
+    nombre: 'IA Cosmetic Crema Hidratante Multipéptidos + AH',
+    marca: 'IA_Cosmetic',
     descripcion: 'Crema ultra nutritiva que rellena líneas de expresión y unifica el tono hidratando a múltiples profundidades.',
     precio: 48.00,
     imagenUrl: '/products/multipeptides.png',
@@ -59,7 +69,7 @@ export const MOCK_PRODUCTS = [
   }
 ];
 
-export async function getProductsByImperfections(anomalies: string[]) {
+export async function getProductsByImperfections(anomalies: string[]): Promise<SkincareProduct[]> {
   try {
     // Attempt database call
     console.log('Querying database for anomalies:', anomalies);
@@ -84,9 +94,9 @@ export async function getProductsByImperfections(anomalies: string[]) {
           }
         }
       }
-    });
+    }) as any[];
 
-    if (products.length === 0) {
+    if (!products || products.length === 0) {
       // If db connection succeeded but empty (e.g. not seeded yet), fallback to filtered mocks
       return MOCK_PRODUCTS.filter(p => 
         p.imperfecciones.some(imp => anomalies.includes(imp))
@@ -99,9 +109,11 @@ export async function getProductsByImperfections(anomalies: string[]) {
       nombre: p.nombre,
       marca: p.marca,
       descripcion: p.descripcion,
-      precio: p.precio,
+      precio: Number(p.precio),
       imagenUrl: p.imagenUrl,
-      imperfecciones: p.productoImperfeccion.map(pi => pi.imperfeccion.nombre)
+      imperfecciones: Array.isArray(p.productoImperfeccion)
+        ? p.productoImperfeccion.map((pi: any) => pi.imperfeccion?.nombre || '')
+        : []
     }));
 
   } catch (error) {
