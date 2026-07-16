@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  fastapi-ia:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cosmetic-ia-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Montar localmente para poder modificar el código sin reconstruir la imagen completa
+      - ./app_fastapi.py:/app/app_fastapi.py
+      - ./best_model.pth:/app/best_model.pth
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: cosmetic-ia-ngrok
+    restart: unless-stopped
+    command:
+      - "http"
+      - "fastapi-ia:8000"
+      - "--domain=stonewall-bountiful-steep.ngrok-free.dev"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    depends_on:
+      - fastapi-ia
