@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, RefreshCw, Upload, Sparkles, Check, ArrowLeft, Loader2, Beaker, HelpCircle } from 'lucide-react';
+import { Camera, RefreshCw, Upload, Sparkles, Check, ArrowLeft, Loader2, Beaker, HelpCircle, FlipHorizontal } from 'lucide-react';
 
 interface VisualOverlay {
   type: string;
@@ -38,6 +38,7 @@ export default function DiagnosticoPage() {
   const [results, setResults] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addedProducts, setAddedProducts] = useState<Record<string, boolean>>({});
+  const [isMirrored, setIsMirrored] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -49,16 +50,43 @@ export default function DiagnosticoPage() {
       setCapturedImage(null);
       setResults(null);
       
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
-        audio: false
-      });
+      let mediaStream: MediaStream;
+      try {
+        // Try high quality first
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'user', 
+            width: { ideal: 1920 }, 
+            height: { ideal: 1080 } 
+          },
+          audio: false
+        });
+      } catch (firstErr: any) {
+        console.warn("Could not start camera with HD constraints. Falling back to default constraints.", firstErr);
+        // Fallback to basic video stream
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false
+        });
+      }
       
       setStream(mediaStream);
       setIsCameraActive(true);
     } catch (err: any) {
       console.error("Camera access error:", err);
-      setError("No se pudo acceder a la cámara. Por favor permite el acceso o sube una imagen de tu galería.");
+      
+      let errorMsg = "No se pudo acceder a la cámara.";
+      if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        errorMsg = "La cámara está siendo utilizada por otra aplicación (como Zoom, Teams, u otra pestaña) o el sistema no permite el acceso. Por favor, ciérrala e intenta de nuevo.";
+      } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMsg = "Acceso a la cámara denegado. Por favor, permite el acceso en los permisos de tu navegador.";
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errorMsg = "No se detectó ninguna cámara en este dispositivo. Puedes subir una imagen desde tu galería.";
+      } else {
+        errorMsg += " Por favor verifica tu conexión o sube una imagen de tu galería.";
+      }
+      
+      setError(errorMsg);
       setIsCameraActive(false);
     }
   };
@@ -77,14 +105,25 @@ export default function DiagnosticoPage() {
     if (videoRef.current) {
       const video = videoRef.current;
       const canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 480;
+      canvas.width = video.videoWidth || 1920;
+      canvas.height = video.videoHeight || 1080;
       const ctx = canvas.getContext('2d');
       
       if (ctx) {
+        // If mirroring is active, flip canvas context before drawing
+        if (isMirrored) {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
+        
         // Draw the current video frame on the canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
+        
+        // Reset transformation matrix to default
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        
+        // Export high-quality image (0.95 quality)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         setCapturedImage(dataUrl);
         stopCamera();
         analyzeSkin(dataUrl);
@@ -190,7 +229,7 @@ export default function DiagnosticoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#8E7E73]/20">
+    <div className="min-h-screen lg:h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#8E7E73]/20 lg:overflow-hidden">
       {/* Mini Header */}
       <header className="border-b border-[#8E7E73]/10 py-5 px-6 sm:px-8 flex justify-between items-center bg-[#FDFBF7]">
         <div className="flex items-center gap-4">
@@ -208,9 +247,9 @@ export default function DiagnosticoPage() {
       </header>
 
       {/* Main Workspace split screen */}
-      <div className="flex-1 grid lg:grid-cols-12 gap-0 overflow-hidden">
+      <div className="flex-1 grid lg:grid-cols-12 gap-0 lg:overflow-hidden">
         {/* Left Panel: Camera capture and drawing */}
-        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col items-center justify-center border-r border-[#8E7E73]/10 bg-[#FDFBF7]">
+        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col items-center justify-center border-r border-[#8E7E73]/10 bg-[#FDFBF7] lg:h-full lg:overflow-y-auto">
           <div className="w-full max-w-2xl flex flex-col gap-6">
             <div className="flex justify-between items-center">
               <div>
@@ -234,18 +273,30 @@ export default function DiagnosticoPage() {
               
               {/* Live Web Camera View */}
               {isCameraActive && (
-                <video
-                  ref={(el) => {
-                    videoRef.current = el;
-                    if (el && stream) {
-                      el.srcObject = stream;
-                    }
-                  }}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <>
+                  <video
+                    ref={(el) => {
+                      videoRef.current = el;
+                      if (el && stream) {
+                        el.srcObject = stream;
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
+                      isMirrored ? 'scale-x-[-1]' : ''
+                    }`}
+                  />
+                  {/* Floating Toggle Mirror Button */}
+                  <button
+                    onClick={() => setIsMirrored(!isMirrored)}
+                    className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-md border border-[#8E7E73]/20 text-[#8E7E73] p-2.5 rounded-full hover:bg-white hover:text-[#1A1A1A] transition-all duration-300 shadow-md flex items-center justify-center group"
+                    title="Alternar Modo Espejo"
+                  >
+                    <FlipHorizontal className={`w-4 h-4 transition-transform duration-500 ${isMirrored ? 'rotate-180' : ''}`} />
+                  </button>
+                </>
               )}
 
               {/* Static Captured Image View with Overlay Masks */}
@@ -390,7 +441,7 @@ export default function DiagnosticoPage() {
         </div>
 
         {/* Right Panel: Diagnosis reports and Neon db product catalog */}
-        <div className="lg:col-span-5 p-6 sm:p-8 bg-[#F5EFEB]/30 flex flex-col justify-start border-t lg:border-t-0 overflow-y-auto max-h-[85vh] lg:max-h-none">
+        <div className="lg:col-span-5 p-6 sm:p-8 bg-[#F5EFEB]/30 flex flex-col justify-start border-t lg:border-t-0 lg:h-full lg:overflow-y-auto">
           
           {/* STATE 1: Empty state, waiting for image capture */}
           {!capturedImage && !isAnalyzing && (
