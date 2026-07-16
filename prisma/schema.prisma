@@ -1,0 +1,34 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Imperfeccion {
+  id                   String                 @id @default(uuid())
+  nombre               String                 @unique // ej: "acne", "manchas", "arrugas"
+  productoImperfeccion ProductoImperfeccion[]
+}
+
+model Producto {
+  id                   String                 @id @default(uuid())
+  nombre               String
+  marca                String
+  descripcion          String
+  precio               Float
+  imagenUrl            String
+  productoImperfeccion ProductoImperfeccion[]
+}
+
+model ProductoImperfeccion {
+  productoId     String
+  imperfeccionId String
+  producto       Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  imperfeccion   Imperfeccion @relation(fields: [imperfeccionId], references: [id], onDelete: Cascade)
+
+  @@id([productoId, imperfeccionId])
+  @@map("producto_imperfeccion")
+}
