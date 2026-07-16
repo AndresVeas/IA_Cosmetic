@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instalar dependencias del sistema mínimas requeridas por OpenCV y PyTorch
+# Instalar dependencias del sistema mínimas requeridas por OpenCV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libgomp1 \
@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements_fastapi.txt .
 RUN pip install --no-cache-dir -r requirements_fastapi.txt
 
-# Copiar el código de la aplicación y el modelo de pesos
+# Copiar el código de la aplicación y el modelo de pesos ONNX
 COPY app_fastapi.py .
-COPY best_model.pth .
+COPY best_model.onnx .
 
 # Exponer el puerto de FastAPI
 EXPOSE 8000

@@ -11,7 +11,7 @@ services:
     volumes:
       # Montar localmente para poder modificar el código sin reconstruir la imagen completa
       - ./app_fastapi.py:/app/app_fastapi.py
-      - ./best_model.pth:/app/best_model.pth
+      - ./best_model.onnx:/app/best_model.onnx
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

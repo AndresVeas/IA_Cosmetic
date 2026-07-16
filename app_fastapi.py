@@ -2,17 +2,16 @@ import os
 import base64
 import numpy as np
 import cv2
-import torch
-import segmentation_models_pytorch as smp
+import onnxruntime as ort
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
 # Inicializar FastAPI
-app = FastAPI(title="IA_Cosmetic U-Net Inference Server")
+app = FastAPI(title="IA_Cosmetic ONNX Inference Server")
 
-# Habilitar CORS para permitir peticiones desde el frontend de Next.js si se hace directo
+# Habilitar CORS para permitir peticiones desde el frontend de Next.js
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,35 +20,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Detectar dispositivo (CPU o CUDA/GPU)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Variable global para el modelo
-model = None
+# Variable global para la sesión de ONNX
+ort_session = None
 
 @app.on_event("startup")
 def load_model():
-    global model
-    model_path = "best_model.pth"
+    global ort_session
+    model_path = "best_model.onnx"
     if not os.path.exists(model_path):
         print(f"[!] ADVERTENCIA: No se encontró '{model_path}' en el directorio. La inferencia fallará hasta que esté presente.")
         return
 
     try:
-        print(f"Cargando arquitectura U-Net con ResNet34 en {device}...")
-        model = smp.Unet(
-            encoder_name="resnet34",
-            encoder_weights=None,
-            in_channels=3,
-            classes=4
-        )
-        print(f"Cargando pesos desde '{model_path}'...")
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        model.to(device)
-        model.eval()
-        print("¡Modelo cargado en memoria exitosamente y listo para inferencias!")
+        print(f"Cargando modelo ONNX desde '{model_path}' en CPU...")
+        # Carga el modelo optimizado utilizando el proveedor de CPU para inferencia ultra-rápida y ligera
+        ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+        print("¡Modelo ONNX cargado en memoria exitosamente y listo para inferencias!")
     except Exception as e:
-        print(f"Error crítico al cargar el modelo: {str(e)}")
+        print(f"Error crítico al cargar el modelo ONNX: {str(e)}")
 
 class AnalysisRequest(BaseModel):
     image: str  # Base64 string
@@ -60,9 +48,9 @@ async def analyze_skin(payload: AnalysisRequest):
     if not data_payload or not data_payload.image:
         raise HTTPException(status_code=400, detail="No se recibió ninguna imagen en formato base64.")
 
-    global model
-    if model is None:
-        raise HTTPException(status_code=503, detail="El modelo U-Net no está cargado. Verifica que best_model.pth exista en la raíz.")
+    global ort_session
+    if ort_session is None:
+        raise HTTPException(status_code=503, detail="El modelo ONNX no está cargado. Verifica que best_model.onnx exista en la raíz.")
 
     try:
         # 1. Decodificar la imagen base64
@@ -86,13 +74,17 @@ async def analyze_skin(payload: AnalysisRequest):
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         img_normalized = (img_resized / 255.0 - mean) / std
         
-        # Formatear a Tensor [1, 3, 256, 256]
-        img_tensor = torch.tensor(img_normalized, dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(device)
+        # Formatear a tensor [1, 3, 256, 256] para ONNX (numpy float32)
+        img_tensor = np.transpose(img_normalized, (2, 0, 1))
+        img_tensor = np.expand_dims(img_tensor, axis=0).astype(np.float32)
         
-        # 3. Correr Inferencia
-        with torch.no_grad():
-            output = model(img_tensor)  # Logits shape [1, 4, 256, 256]
-            preds = torch.argmax(output, dim=1).squeeze(0).cpu().numpy()  # Clases: 0, 1, 2, 3
+        # 3. Correr Inferencia con ONNX Runtime
+        input_name = ort_session.get_inputs()[0].name
+        output_name = ort_session.get_outputs()[0].name
+        raw_outputs = ort_session.run([output_name], {input_name: img_tensor})
+        
+        # Obtener predicciones (Argmax sobre las clases)
+        preds = np.argmax(raw_outputs[0], axis=1)[0]  # Shape: [256, 256]
             
         # 4. Detección de anomalías con OpenCV (escalando a 640x480)
         visual_overlay = []
@@ -144,5 +136,5 @@ async def analyze_skin(payload: AnalysisRequest):
         raise HTTPException(status_code=500, detail=f"Error durante el procesamiento de la imagen: {str(e)}")
 
 if __name__ == "__main__":
-    print("Iniciando el servidor de FastAPI en http://localhost:8000...")
+    print("Iniciando el servidor de FastAPI ONNX en http://localhost:8000...")
     uvicorn.run(app, host="0.0.0.0", port=8000)
