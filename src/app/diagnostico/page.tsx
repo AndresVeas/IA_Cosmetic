@@ -42,6 +42,7 @@ export default function DiagnosticoPage() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   // Initialize camera stream
   const startCamera = async () => {
@@ -190,6 +191,13 @@ export default function DiagnosticoPage() {
     };
   }, [stream]);
 
+  // Scroll to results on mobile after skin analysis is triggered
+  useEffect(() => {
+    if ((results || isAnalyzing) && window.innerWidth < 1024) {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [results, isAnalyzing]);
+
   // Color mappings for UI anomalies
   const getColorClasses = (type: string) => {
     switch (type) {
@@ -269,7 +277,7 @@ export default function DiagnosticoPage() {
             </div>
 
             {/* Viewport Frame */}
-            <div className="relative aspect-[4/3] w-full rounded-3xl overflow-hidden bg-[#F5EFEB]/50 border border-[#8E7E73]/20 shadow-inner flex flex-col items-center justify-center">
+            <div className="relative aspect-[4/5] lg:aspect-[4/3] w-full rounded-3xl overflow-hidden bg-[#F5EFEB]/50 border border-[#8E7E73]/20 shadow-inner flex flex-col items-center justify-center">
               
               {/* Live Web Camera View */}
               {isCameraActive && (
@@ -441,7 +449,12 @@ export default function DiagnosticoPage() {
         </div>
 
         {/* Right Panel: Diagnosis reports and Neon db product catalog */}
-        <div className="lg:col-span-5 p-6 sm:p-8 bg-[#F5EFEB]/30 flex flex-col justify-start border-t lg:border-t-0 lg:h-full lg:overflow-y-auto">
+        <div
+          ref={resultsRef}
+          className={`lg:col-span-5 p-6 sm:p-8 bg-[#F5EFEB]/30 flex flex-col justify-start border-t lg:border-t-0 lg:h-full lg:overflow-y-auto ${
+            capturedImage || isAnalyzing ? 'flex' : 'hidden lg:flex'
+          }`}
+        >
           
           {/* STATE 1: Empty state, waiting for image capture */}
           {!capturedImage && !isAnalyzing && (
