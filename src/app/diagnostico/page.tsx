@@ -56,10 +56,6 @@ export default function DiagnosticoPage() {
       
       setStream(mediaStream);
       setIsCameraActive(true);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
     } catch (err: any) {
       console.error("Camera access error:", err);
       setError("No se pudo acceder a la cámara. Por favor permite el acceso o sube una imagen de tu galería.");
@@ -239,9 +235,15 @@ export default function DiagnosticoPage() {
               {/* Live Web Camera View */}
               {isCameraActive && (
                 <video
-                  ref={videoRef}
+                  ref={(el) => {
+                    videoRef.current = el;
+                    if (el && stream) {
+                      el.srcObject = stream;
+                    }
+                  }}
                   autoPlay
                   playsInline
+                  muted
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               )}
