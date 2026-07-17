@@ -85,6 +85,9 @@ async def analyze_skin(payload: AnalysisRequest):
         
         # Obtener predicciones (Argmax sobre las clases)
         preds = np.argmax(raw_outputs[0], axis=1)[0]  # Shape: [256, 256]
+        
+        # Depuración: Contar píxeles predichos de cada clase
+        print(f"[DEBUG] Píxeles predichos en resolución 256x256 -> Acné: {np.sum(preds == 1)}, Manchas: {np.sum(preds == 2)}, Arrugas: {np.sum(preds == 3)} (de {preds.size} píxeles totales)")
             
         # 4. Detección de anomalías con OpenCV (escalando a 640x480)
         visual_overlay = []

@@ -1,15 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model Imperfeccion {
   id                   String                 @id @default(uuid())
-  nombre               String                 @unique // ej: "acne", "manchas", "arrugas"
+  nombre               String                 @unique
   productoImperfeccion ProductoImperfeccion[]
 }
 
@@ -26,8 +26,8 @@ model Producto {
 model ProductoImperfeccion {
   productoId     String
   imperfeccionId String
-  producto       Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade)
   imperfeccion   Imperfeccion @relation(fields: [imperfeccionId], references: [id], onDelete: Cascade)
+  producto       Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade)
 
   @@id([productoId, imperfeccionId])
   @@map("producto_imperfeccion")
