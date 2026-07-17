@@ -84,12 +84,13 @@ def analyze_skin(payload: AnalysisRequest):
         output_name = ort_session.get_outputs()[0].name
         raw_outputs = ort_session.run([output_name], {input_name: img_tensor})
         
-        # Obtener predicciones (Argmax sobre las clases)
-        preds = np.argmax(raw_outputs[0], axis=1)[0]  # Shape: [256, 256]
+        # Obtener los logits crudos del modelo
+        logits = raw_outputs[0][0]  # Shape: [4, 256, 256]
         
-        # Depuración: Contar píxeles predichos de cada clase
-        print(f"[DEBUG] Píxeles predichos en resolución 256x256 -> Acné: {np.sum(preds == 1)}, Manchas: {np.sum(preds == 2)}, Arrugas: {np.sum(preds == 3)} (de {preds.size} píxeles totales)")
-            
+        # Aplicar Softmax para obtener las probabilidades normalizadas por píxel
+        logits_exp = np.exp(logits - np.max(logits, axis=0, keepdims=True))
+        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True) # Shape: [4, 256, 256]
+        
         # 4. Detección de anomalías con OpenCV (escalando a 640x480)
         visual_overlay = []
         anomalies_detected = set()
@@ -97,10 +98,24 @@ def analyze_skin(payload: AnalysisRequest):
         classes_map = {1: "acne", 2: "manchas", 3: "arrugas"}
         labels_map = {1: "Acné", 2: "Hiperpigmentación", 3: "Línea/Arruga"}
         
-        preds_scaled = cv2.resize(preds.astype(np.uint8), (640, 480), interpolation=cv2.INTER_NEAREST)
+        # Umbrales de probabilidad personalizados para detectar anomalías con mayor sensibilidad
+        thresholds = {
+            1: 0.20,  # Acné (Muy sensible para detectar pequeños brotes)
+            2: 0.20,  # Manchas / Hiperpigmentación (Sensible)
+            3: 0.25   # Arrugas (Evita falsas detecciones por líneas muy tenues)
+        }
         
         for class_id, class_name in classes_map.items():
-            mask = (preds_scaled == class_id).astype(np.uint8)
+            # Redimensionar el mapa de probabilidad de la clase usando interpolación bilineal (más suave y precisa)
+            prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
+            
+            # Crear la máscara binaria aplicando el umbral
+            mask = (prob_scaled > thresholds[class_id]).astype(np.uint8)
+            
+            # Contar píxeles activos en la resolución 640x480
+            active_pixels = np.sum(mask)
+            print(f"[DEBUG] Clase {class_name.upper()}: {active_pixels} píxeles superaron el umbral {thresholds[class_id]}")
+            
             # Encontrar las islas o imperfecciones conectadas
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
@@ -111,13 +126,23 @@ def analyze_skin(payload: AnalysisRequest):
                 if area < 15:
                     continue
                 
-                # Obtener el círculo contenedor mínimo
-                (x, y), radius = cv2.minEnclosingCircle(cnt)
+                # Obtener momentos del contorno para encontrar el centro de masa de la concentración (Centroide)
+                M = cv2.moments(cnt)
+                if M["m00"] != 0:
+                    cx = int(M["m10"] / M["m00"])
+                    cy = int(M["m01"] / M["m00"])
+                else:
+                    # Fallback al centro del círculo contenedor mínimo
+                    (circle_x, circle_y), _ = cv2.minEnclosingCircle(cnt)
+                    cx, cy = int(circle_x), int(circle_y)
+                
+                # Obtener el radio del círculo contenedor para dibujar la cobertura
+                (_, _), radius = cv2.minEnclosingCircle(cnt)
                 
                 class_overlays.append({
                     "type": class_name,
-                    "x": int(x),
-                    "y": int(y),
+                    "x": cx,
+                    "y": cy,
                     "radius": max(6, int(radius)),
                     "label": f"{labels_map[class_id]} ({int(area)} px)",
                     "size": int(area)
