@@ -3,15 +3,14 @@ version: '3.8'
 services:
   fastapi-ia:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: cosmetic-ia-backend
     ports:
       - "8000:8000"
     volumes:
       # Montar localmente para poder modificar el código sin reconstruir la imagen completa
-      - ./app_fastapi.py:/app/app_fastapi.py
-      - ./best_model.onnx:/app/best_model.onnx
+      - ./backend:/app
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

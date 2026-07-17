@@ -1,0 +1,11 @@
+.git
+.next
+node_modules
+.env
+.env.local
+venv/
+.venv/
+venv_wsl/
+out/
+build/
+*.tsbuildinfo

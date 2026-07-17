@@ -1,0 +1,6 @@
+onnxruntime
+opencv-python-headless
+fastapi
+uvicorn
+pydantic
+numpy
