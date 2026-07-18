@@ -87,110 +87,23 @@ def analyze_skin(payload: AnalysisRequest):
         # Obtener los logits crudos del modelo
         logits = raw_outputs[0][0]  # Shape: [4, 256, 256]
         
-        # Aplicar Softmax para obtener las probabilidades normalizadas por píxel
+        # Calcular softmax para obtener probabilidades de confianza por píxel
         logits_exp = np.exp(logits - np.max(logits, axis=0, keepdims=True))
-        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True) # Shape: [4, 256, 256]
+        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)
         
-        # 4. Detección de anomalías con OpenCV (escalando a 640x480)
+        # 4. Obtener la predicción de la clase ganadora por píxel (argmax)
+        prediction = np.argmax(logits, axis=0).astype(np.uint8)  # Shape: [256, 256]
+        
+        # Redimensionar la predicción a la resolución de salida (640x480) usando vecino más cercano (INTER_NEAREST)
+        prediction_scaled = cv2.resize(prediction, (640, 480), interpolation=cv2.INTER_NEAREST)
+        
         visual_overlay = []
         anomalies_detected = set()
         
         classes_map = {1: "acne", 2: "manchas", 3: "arrugas"}
         labels_map = {1: "Acné", 2: "Hiperpigmentación", 3: "Línea/Arruga"}
         
-        # Umbrales de probabilidad personalizados para detectar anomalías con mayor sensibilidad
-        thresholds = {
-            1: 0.20,  # Acné (Muy sensible para detectar pequeños brotes)
-            2: 0.20,  # Manchas / Hiperpigmentación (Sensible)
-            3: 0.25   # Arrugas (Evita falsas detecciones por líneas muy tenues)
-        }
-        
-        for class_id, class_name in classes_map.items():
-            # Redimensionar el mapa de probabilidad de la clase usando interpolación bilineal (más suave y precisa)
-            prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
-            
-            # Crear la máscara binaria aplicando el umbral
-            mask = (prob_scaled > thresholds[class_id]).astype(np.uint8)
-            
-            # Contar píxeles activos en la resolución 640x480
-            active_pixels = np.sum(mask)
-            print(f"[DEBUG] Clase {class_name.upper()}: {active_pixels} píxeles superaron el umbral {thresholds[class_id]}")
-            
-            # Encontrar las islas o imperfecciones conectadas
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            class_overlays = []
-            for i, cnt in enumerate(contours):
-                area = cv2.contourArea(cnt)
-                # Omitir ruidos pequeños (menos de 15 píxeles en resolución 640x480)
-                if area < 15:
-                    continue
-                
-                # Obtener momentos del contorno para encontrar el centro de masa de la concentración (Centroide)
-                M = cv2.moments(cnt)
-                if M["m00"] != 0:
-                    cx = int(M["m10"] / M["m00"])
-                    cy = int(M["m01"] / M["m00"])
-                else:
-                    # Fallback al centro del círculo contenedor mínimo
-                    (circle_x, circle_y), _ = cv2.minEnclosingCircle(cnt)
-                    cx, cy = int(circle_x), int(circle_y)
-                
-                # Obtener el radio del círculo contenedor para dibujar la cobertura
-                (_, _), radius = cv2.minEnclosingCircle(cnt)
-                
-                class_overlays.append({
-                    "type": class_name,
-                    "x": cx,
-                    "y": cy,
-                    "radius": max(6, int(radius)),
-                    "label": f"{labels_map[class_id]} ({int(area)} px)",
-                    "size": int(area)
-                })
-            
-            # Ordenar por tamaño descendente y tomar máximo 3 para evitar saturar la interfaz
-            class_overlays.sort(key=lambda item: item["size"], reverse=True)
-            for item in class_overlays[:3]:
-                anomalies_detected.add(class_name)
-                del item["size"]  # Eliminar clave temporal de ordenamiento
-                visual_overlay.append(item)
-
-        # Si no se detectó nada con los umbrales normales (por ejemplo, por mala iluminación),
-        # ejecutamos un escaneo con ultra-sensibilidad para detectar imperfecciones sutiles.
-        if len(anomalies_detected) == 0:
-            print("[DEBUG] No se detectaron anomalías con los umbrales estándar. Ejecutando escaneo ultra-sensible...")
-            sensitive_thresholds = {1: 0.04, 2: 0.04, 3: 0.06}
-            for class_id, class_name in classes_map.items():
-                prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
-                mask = (prob_scaled > sensitive_thresholds[class_id]).astype(np.uint8)
-                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                
-                class_overlays = []
-                for i, cnt in enumerate(contours):
-                    area = cv2.contourArea(cnt)
-                    if area < 8:  # Área mínima más pequeña para detectar pequeños detalles
-                        continue
-                    
-                    (circle_x, circle_y), radius = cv2.minEnclosingCircle(cnt)
-                    cx, cy = int(circle_x), int(circle_y)
-                    
-                    class_overlays.append({
-                        "type": class_name,
-                        "x": cx,
-                        "y": cy,
-                        "radius": max(5, int(radius)),
-                        "label": f"{labels_map[class_id]} (Sensible)",
-                        "size": int(area)
-                    })
-                
-                class_overlays.sort(key=lambda item: item["size"], reverse=True)
-                for item in class_overlays[:2]:
-                    anomalies_detected.add(class_name)
-                    del item["size"]
-                    visual_overlay.append(item)
-                
-        # 5. Generar la máscara de segmentación UNET en formato RGBA (base64)
-        active_thresholds = thresholds if len(anomalies_detected) > 0 else {1: 0.04, 2: 0.04, 3: 0.06}
+        # Generar la máscara de segmentación UNET en formato RGBA (base64)
         overlay_mask = np.zeros((480, 640, 4), dtype=np.uint8)
         
         # Colores RGBA en formato BGRA para OpenCV:
@@ -203,11 +116,74 @@ def analyze_skin(payload: AnalysisRequest):
             3: [232, 117, 137, 140]   # arrugas
         }
         
-        for class_id, color in color_map.items():
-            prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
-            mask_indices = prob_scaled > active_thresholds[class_id]
-            overlay_mask[mask_indices] = color
+        for class_id, class_name in classes_map.items():
+            class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
+            # Pintar la máscara correspondiente a este canal en el overlay
+            overlay_mask[class_mask == 1] = color_map[class_id]
+            
+            # Redimensionar el mapa de probabilidad de la clase para calcular confianza
+            prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
+            
+            # Contar píxeles activos en la resolución 640x480
+            active_pixels = np.sum(class_mask)
+            print(f"[DEBUG] Clase {class_name.upper()}: {active_pixels} píxeles de predicción U-Net")
+            
+            # Encontrar contornos sobre la máscara de argmax real
+            contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            class_overlays = []
+            for i, cnt in enumerate(contours):
+                area = cv2.contourArea(cnt)
+                # Omitir ruidos extremadamente pequeños (menos de 8 píxeles en resolución 640x480)
+                if area < 8:
+                    continue
+                
+                # Calcular la confianza/intensidad media de los píxeles de este contorno
+                single_contour_mask = np.zeros(class_mask.shape, dtype=np.uint8)
+                cv2.drawContours(single_contour_mask, [cnt], -1, 1, thickness=-1)
+                mean_conf = np.mean(prob_scaled[single_contour_mask == 1]) if np.sum(single_contour_mask) > 0 else 0.0
+                confidence_pct = int(mean_conf * 100)
+                
+                # Determinar severidad según el tamaño del foco
+                if area < 50:
+                    severity = "Leve"
+                elif area <= 200:
+                    severity = "Moderado"
+                else:
+                    severity = "Severo"
+                
+                # Obtener centroide de masa
+                M = cv2.moments(cnt)
+                if M["m00"] != 0:
+                    cx = int(M["m10"] / M["m00"])
+                    cy = int(M["m01"] / M["m00"])
+                else:
+                    (circle_x, circle_y), _ = cv2.minEnclosingCircle(cnt)
+                    cx, cy = int(circle_x), int(circle_y)
+                
+                (_, _), radius = cv2.minEnclosingCircle(cnt)
+                
+                class_overlays.append({
+                    "type": class_name,
+                    "x": cx,
+                    "y": cy,
+                    "radius": max(5, int(radius)),
+                    "label": f"Foco {severity} ({int(area)} px) · Confianza: {confidence_pct}%",
+                    "size": int(area),
+                    "area": int(area),
+                    "confidence": confidence_pct,
+                    "severity": severity
+                })
+            
+            # Ordenar por tamaño descendente y tomar máximo 3 por clase para no saturar la UI con marcadores
+            class_overlays.sort(key=lambda item: item["size"], reverse=True)
+            for item in class_overlays[:3]:
+                anomalies_detected.add(class_name)
+                del item["size"]
+                visual_overlay.append(item)
+                
+        # Codificar máscara a base64
         _, encoded_img = cv2.imencode(".png", overlay_mask)
         mask_base64 = base64.b64encode(encoded_img).decode("utf-8")
         mask_image_url = f"data:image/png;base64,{mask_base64}"

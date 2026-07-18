@@ -34,6 +34,9 @@ interface VisualOverlay {
   y: number;
   radius: number;
   label: string;
+  area?: number;
+  confidence?: number;
+  severity?: string;
 }
 
 interface Product {
@@ -313,7 +316,22 @@ export default function DiagnosticoPage() {
                         aria-label={`${meta.label}: ${overlay.label}`}
                       >
                         <span>{index + 1}</span>
-                        <div className={styles.markerTooltip}><strong>{meta.label}</strong> · {overlay.label}</div>
+                        <div className={styles.markerTooltip}>
+                          <strong>{meta.label} #{index + 1}</strong>
+                          <div className={styles.tooltipRow}>
+                            <span>Foco:</span> <strong>{overlay.severity || 'Identificado'}</strong>
+                          </div>
+                          {overlay.area && (
+                            <div className={styles.tooltipRow}>
+                              <span>Tamaño:</span> <strong>{overlay.area} px</strong>
+                            </div>
+                          )}
+                          {overlay.confidence && (
+                            <div className={styles.tooltipRow}>
+                              <span>Confianza:</span> <strong>{overlay.confidence}%</strong>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -412,12 +430,6 @@ export default function DiagnosticoPage() {
               <div className={styles.reportHeader}>
                 <span className={styles.eyebrow}>Análisis dermocosmético</span>
                 <h2>Informe de tu piel</h2>
-                <div className={styles.chips}>
-                  {results.anomalies.map((anomaly) => {
-                    const meta = getAnomalyMeta(anomaly);
-                    return <span key={anomaly} className={`${styles.chip} ${meta.tone}`}>{meta.label}</span>;
-                  })}
-                </div>
               </div>
 
               <div className={styles.summaryCard}>
