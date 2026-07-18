@@ -117,7 +117,7 @@ export default function Logo({ showTagline = false, className = "", alignment = 
       <div className={`flex flex-col items-center text-center gap-3 shrink-0 ${className}`}>
         <LogoIcon className="w-20 h-20 text-brand-plum flex-shrink-0" />
         <div className="flex flex-col items-center">
-          <div className="font-display text-2xl tracking-[0.08em] font-bold leading-none flex items-center gap-1.5">
+          <div className="font-display text-4xl tracking-[0.08em] font-bold leading-none flex items-center gap-1.5">
             <span className="text-brand-plum font-bold">IA</span>
             <span className="text-brand-accent font-semibold tracking-[0.1em] ml-1">COSMETIC</span>
           </div>
@@ -128,7 +128,7 @@ export default function Logo({ showTagline = false, className = "", alignment = 
             <div className="h-[0.5px] bg-brand-dusty-rose/35 flex-1"></div>
           </div>
           {showTagline && (
-            <span className="text-[8px] tracking-[0.25em] uppercase font-sans text-brand-plum/80 font-bold">
+            <span className="text-[11px] tracking-[0.25em] uppercase font-sans text-brand-plum/80 font-bold">
               CIENCIA INTELIGENTE PARA TU PIEL
             </span>
           )}
@@ -141,12 +141,12 @@ export default function Logo({ showTagline = false, className = "", alignment = 
     <div className={`flex items-center gap-2 shrink-0 ${className}`}>
       <LogoIcon className="w-12 h-12 text-brand-plum flex-shrink-0" />
       <div className="flex flex-col justify-center">
-        <div className="font-display text-lg tracking-[0.07em] font-bold leading-none flex items-center">
+        <div className="font-display text-2xl tracking-[0.07em] font-bold leading-none flex items-center">
           <span className="text-brand-plum font-bold">IA</span>
           <span className="text-brand-accent font-semibold tracking-[0.09em] ml-2">COSMETIC</span>
         </div>
         {showTagline && (
-          <span className="text-[6.5px] tracking-[0.25em] uppercase font-sans text-brand-plum/70 font-semibold mt-1">
+          <span className="text-[9px] tracking-[0.25em] uppercase font-sans text-brand-plum/70 font-semibold mt-1.5">
             CIENCIA INTELIGENTE PARA TU PIEL
           </span>
         )}
