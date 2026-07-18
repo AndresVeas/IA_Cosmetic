@@ -47,7 +47,17 @@
 .mirrorButton:hover { background: white; transform: translateY(-2px); }
 .mirrorButton svg { width: 18px; }
 .faceGuide, .faceSilhouette { border: 1px dashed rgb(88 30 46 / 17%); border-radius: 48% 48% 46% 46%; }
-.faceGuide { position: absolute; z-index: 3; width: 40%; height: 76%; pointer-events: none; left: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 999px rgb(65 20 32 / 6%); }
+.faceGuide { position: absolute; z-index: 3; width: min(43%, 310px); height: 76%; pointer-events: none; left: 50%; top: 48%; transform: translate(-50%, -50%); border: 2px solid rgb(255 255 255 / 88%); box-shadow: 0 0 0 1px rgb(88 30 46 / 45%), 0 0 0 999px rgb(41 33 38 / 18%), inset 0 0 28px rgb(255 255 255 / 8%); }
+.faceGuide::before, .faceGuide::after { content: ''; position: absolute; top: 36%; width: 18px; height: 70px; border: 2px solid rgb(255 255 255 / 75%); }
+.faceGuide::before { left: -12px; border-right: 0; border-radius: 18px 0 0 18px; }
+.faceGuide::after { right: -12px; border-left: 0; border-radius: 0 18px 18px 0; }
+.guideVertical, .guideEyes { position: absolute; display: block; opacity: .52; }
+.guideVertical { left: 50%; top: 8%; bottom: 8%; border-left: 1px dashed white; }
+.guideEyes { left: 14%; right: 14%; top: 39%; border-top: 1px dashed white; }
+.guideEyes::before, .guideEyes::after { content: ''; position: absolute; top: -4px; width: 8px; height: 8px; border: 1px solid white; border-radius: 50%; }
+.guideEyes::before { left: 23%; }.guideEyes::after { right: 23%; }
+.guideShoulders { position: absolute; left: 50%; bottom: -17%; width: 155%; height: 35%; transform: translateX(-50%); border: 2px solid rgb(255 255 255 / 72%); border-bottom: 0; border-radius: 50% 50% 0 0; }
+.guideMessage { position: absolute; z-index: 4; left: 50%; bottom: 17px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); padding: 8px 15px; color: white; background: rgb(41 33 38 / 62%); border: 1px solid rgb(255 255 255 / 35%); border-radius: 999px; backdrop-filter: blur(8px); font-size: 11px; font-weight: 700; letter-spacing: .01em; text-align: center; }
 .imageStage { background: #eadfe4; }
 .placeholder { position: relative; z-index: 2; width: 100%; height: 100%; min-height: 480px; padding: 42px 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .faceSilhouette { position: absolute; width: min(45%, 300px); height: 78%; opacity: .75; }
@@ -154,6 +164,8 @@
   .workspace { min-height: calc(100vh - 68px); }.captureColumn, .infoColumn { padding: 26px 18px; }
   .sectionHeading { align-items: flex-start; flex-direction: column; }.sectionHeading h1 { font-size: 36px; }
   .viewport, .placeholder { min-height: 460px; aspect-ratio: 4 / 5; }
+  .faceGuide { width: 57%; height: 68%; }
+  .guideMessage { bottom: 14px; font-size: 10px; }
   .primaryActions, .belowActions { width: 100%; flex-direction: column; }.primaryActions button, .belowActions button { width: 100%; }
   .introCard { grid-template-columns: 45px 1fr; padding: 16px; }.introIcon { width: 45px; height: 45px; }
   .indicators { grid-template-columns: 1fr; }

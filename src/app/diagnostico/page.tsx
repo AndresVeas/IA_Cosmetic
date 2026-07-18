@@ -244,7 +244,14 @@ export default function DiagnosticoPage() {
                   <button className={styles.mirrorButton} onClick={() => setIsMirrored(!isMirrored)} aria-label="Alternar imagen espejo">
                     <FlipHorizontal />
                   </button>
-                  <div className={styles.faceGuide} aria-hidden="true" />
+                  <div className={styles.faceGuide} aria-hidden="true">
+                    <span className={styles.guideVertical} />
+                    <span className={styles.guideEyes} />
+                    <span className={styles.guideShoulders} />
+                  </div>
+                  <div className={styles.guideMessage} aria-hidden="true">
+                    Centra tu rostro dentro de la guía
+                  </div>
                 </>
               )}
 
