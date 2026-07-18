@@ -7,7 +7,7 @@
   --plum: #581e2e;
   --plum-deep: #411420;
   --ink: #292126;
-  --muted: #615056;
+  --muted: #8b7d82;
   --border: #e7dde1;
   min-height: 100vh;
   color: var(--ink);
@@ -67,16 +67,10 @@
 .resultInfo .summaryCard { padding: 24px; }
 .resultInfo .indicatorCard { min-height: 72px; }
 .sectionHeading { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
-<<<<<<< HEAD
-.sectionHeading h1, .introLead h2, .reportHeader h2 { font-family: var(--font-serif), serif; font-weight: 500; line-height: 1; }
-.sectionHeading h1 { font-size: clamp(34px, 3vw, 46px); }
-.sectionHeading p { margin-top: 8px; color: var(--muted); font-size: 18px; font-weight: 400; }
-=======
 .sectionHeading h1, .sectionHeading h2, .introLead h2, .reportHeader h2 { font-family: var(--font-display); line-height: 1; letter-spacing: -.035em; }
 .sectionHeading h1, .sectionHeading h2 { color: var(--plum); font-size: clamp(34px, 3vw, 46px); font-weight: 800; }
 .introLead h2, .reportHeader h2 { font-weight: 700; }
 .sectionHeading p { margin-top: 8px; color: #74686d; font-size: 17px; font-weight: 500; line-height: 1.45; }
->>>>>>> origin/Camila
 .successBadge { flex: none; padding: 8px 12px; color: #39755a; background: #ddebdD; border-color: #cfe2cf; letter-spacing: 0; text-transform: none; }
 
 .viewport { position: relative; width: 100%; min-height: 480px; aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(145deg, #faf7f7, #f1e9ee 48%, #eee9f0); box-shadow: 0 22px 55px rgb(88 30 46 / 8%), inset 0 0 70px rgb(255 255 255 / 52%); }
@@ -87,17 +81,7 @@
 .mirrorButton:hover { background: white; transform: translateY(-2px); }
 .mirrorButton svg { width: 18px; }
 .faceGuide, .faceSilhouette { border: 1px dashed rgb(88 30 46 / 17%); border-radius: 48% 48% 46% 46%; }
-.faceGuide { position: absolute; z-index: 3; width: min(43%, 310px); height: 76%; pointer-events: none; left: 50%; top: 48%; transform: translate(-50%, -50%); border: 2px solid rgb(255 255 255 / 88%); box-shadow: 0 0 0 1px rgb(88 30 46 / 45%), 0 0 0 999px rgb(41 33 38 / 18%), inset 0 0 28px rgb(255 255 255 / 8%); }
-.faceGuide::before, .faceGuide::after { content: ''; position: absolute; top: 36%; width: 18px; height: 70px; border: 2px solid rgb(255 255 255 / 75%); }
-.faceGuide::before { left: -12px; border-right: 0; border-radius: 18px 0 0 18px; }
-.faceGuide::after { right: -12px; border-left: 0; border-radius: 0 18px 18px 0; }
-.guideVertical, .guideEyes { position: absolute; display: block; opacity: .52; }
-.guideVertical { left: 50%; top: 8%; bottom: 8%; border-left: 1px dashed white; }
-.guideEyes { left: 14%; right: 14%; top: 39%; border-top: 1px dashed white; }
-.guideEyes::before, .guideEyes::after { content: ''; position: absolute; top: -4px; width: 8px; height: 8px; border: 1px solid white; border-radius: 50%; }
-.guideEyes::before { left: 23%; }.guideEyes::after { right: 23%; }
-.guideShoulders { position: absolute; left: 50%; bottom: -17%; width: 155%; height: 35%; transform: translateX(-50%); border: 2px solid rgb(255 255 255 / 72%); border-bottom: 0; border-radius: 50% 50% 0 0; }
-.guideMessage { position: absolute; z-index: 4; left: 50%; bottom: 17px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); padding: 8px 15px; color: white; background: rgb(41 33 38 / 62%); border: 1px solid rgb(255 255 255 / 35%); border-radius: 999px; backdrop-filter: blur(8px); font-size: 11px; font-weight: 700; letter-spacing: .01em; text-align: center; }
+.faceGuide { position: absolute; z-index: 3; width: 40%; height: 76%; pointer-events: none; left: 50%; top: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 999px rgb(65 20 32 / 6%); }
 .imageStage { background: #eadfe4; }
 .placeholder { position: relative; z-index: 2; width: 100%; height: 100%; min-height: 480px; padding: 42px 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .faceSilhouette { position: absolute; width: min(45%, 300px); height: 78%; opacity: .75; }
@@ -106,16 +90,11 @@
 .faceSilhouette span { position: absolute; left: 50%; top: -1px; height: 100%; border-left: 1px dashed rgb(88 30 46 / 8%); }
 .cameraOrb { position: relative; width: 88px; height: 88px; display: grid; place-items: center; color: var(--plum); background: white; border: 1px solid var(--border); border-radius: 50%; box-shadow: 0 10px 26px rgb(88 30 46 / 15%); }
 .cameraOrb svg { width: 34px; height: 34px; }
-<<<<<<< HEAD
-.placeholder h2 { position: relative; margin-top: 18px; font: 500 25px var(--font-serif), serif; }
-.placeholder > p { position: relative; width: min(100%, 430px); margin-top: 7px; color: var(--muted); font-size: 17.5px; line-height: 1.7; font-weight: 400; }
-=======
 .placeholder h2 { position: relative; margin-top: 18px; color: var(--plum); font: 700 25px/1.1 var(--font-display); letter-spacing: -.025em; }
 .placeholder > p { position: relative; width: min(100%, 460px); margin-top: 8px; color: #74686d; font-size: 15px; font-weight: 500; line-height: 1.55; }
 .captureHints { position: relative; width: min(100%, 500px); margin-top: 18px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .captureHints span { padding: 7px 11px; display: inline-flex; align-items: center; gap: 6px; color: var(--plum); background: rgb(255 255 255 / 72%); border: 1px solid var(--dusty); border-radius: 999px; font-size: 11px; font-weight: 600; box-shadow: 0 5px 14px rgb(88 30 46 / 5%); backdrop-filter: blur(6px); }
 .captureHints svg { width: 12px; height: 12px; padding: 2px; color: white; background: var(--plum); border-radius: 50%; stroke-width: 3; }
->>>>>>> origin/Camila
 .primaryActions, .belowActions { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .primaryActions { position: relative; width: min(100%, 500px); margin-top: 26px; }
 .primaryButton, .secondaryButton { min-height: 50px; padding: 0 28px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border-radius: 999px; font-size: 14px; font-weight: 700; }
@@ -141,19 +120,10 @@
 .loadingOverlay h2 { margin-top: 18px; font: 700 27px/1.1 var(--font-display); letter-spacing: -.025em; }
 .loadingOverlay p { margin-top: 5px; color: var(--muted); font-size: 12px; }
 
-<<<<<<< HEAD
-.introPanel { min-height: 100%; display: flex; flex-direction: column; justify-content: center; }
-.introLead { text-align: center; }
-.introLead > span { width: 76px; height: 76px; margin: 0 auto 24px; display: grid; place-items: center; color: var(--plum); background: linear-gradient(145deg, white, var(--blush)); border: 1px solid var(--border); border-radius: 50%; }
-.introLead > span svg { width: 30px; height: 30px; }
-.introLead h2 { color: var(--plum); font-size: clamp(32px, 3vw, 43px); }
-.introLead p { width: min(100%, 530px); margin: 14px auto 0; color: var(--muted); font-size: 18px; line-height: 1.75; font-weight: 400; }
-=======
 .introPanel { min-height: 100%; display: flex; flex-direction: column; justify-content: flex-start; }
 .introLead { min-height: 58px; text-align: left; }
 .introLead h2 { color: var(--plum); font-size: clamp(34px, 3vw, 46px); }
 .introLead p { width: min(100%, 600px); margin: 8px 0 0; color: #74686d; font-size: 16px; font-weight: 500; line-height: 1.5; }
->>>>>>> origin/Camila
 .introCards { display: grid; gap: 14px; margin-top: 38px; }
 .introCard { position: relative; padding: 21px 22px 21px 25px; display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: center; overflow: hidden; background: linear-gradient(110deg, rgb(242 232 237 / 48%), rgb(255 255 255 / 90%) 28%); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 10px 28px rgb(88 30 46 / 6%); }
 .introCard::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--plum); }
@@ -161,13 +131,8 @@
 .introCard:hover { border-color: rgb(88 30 46 / 35%); transform: translateY(-3px); box-shadow: 0 15px 34px rgb(88 30 46 / 10%); }
 .introIcon { width: 52px; height: 52px; display: grid; place-items: center; color: var(--plum); background: var(--blush); border: 1px solid rgb(88 30 46 / 10%); border-radius: 15px; }
 .introIcon svg { width: 23px; }
-<<<<<<< HEAD
-.introCard h3 { font: 600 21px var(--font-serif), serif; }
-.introCard p { margin-top: 4px; color: var(--muted); font-size: 16.5px; line-height: 1.65; font-weight: 400; }
-=======
 .introCard h3 { color: var(--plum); font: 700 19px/1.15 var(--font-body); letter-spacing: -.015em; }
 .introCard p { margin-top: 5px; color: #74686d; font-size: 14px; font-weight: 400; line-height: 1.5; }
->>>>>>> origin/Camila
 
 .progress { position: relative; width: min(100%, 430px); margin: 42px auto 0; display: grid; grid-template-columns: repeat(2, 1fr); text-align: center; }
 .progress::before { content: ''; position: absolute; top: 17px; left: 25%; right: 25%; border-top: 1px dashed var(--dusty); }
@@ -185,15 +150,6 @@
 .chip { padding: 6px 11px; color: var(--marker); background: color-mix(in srgb, var(--marker) 8%, white); border: 1px solid color-mix(in srgb, var(--marker) 48%, white); border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .summaryCard { margin-top: 18px; padding: 22px; display: grid; grid-template-columns: 42px 1fr; gap: 15px; background: rgb(255 255 255 / 88%); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 12px 32px rgb(88 30 46 / 5%); }
 .summaryCard > span { width: 42px; height: 42px; display: grid; place-items: center; color: var(--plum); background: var(--blush); border-radius: 50%; }.summaryCard svg { width: 19px; }
-<<<<<<< HEAD
-.summaryCard p { color: var(--ink); white-space: pre-line; font-size: 18px; font-weight: 500; letter-spacing: .005em; line-height: 1.75; }
-.reportSection { margin-top: 24px; }
-.reportSection h3 { color: var(--ink); font: 600 25px/1.1 var(--font-serif), serif; letter-spacing: -.01em; }
-.indicators { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
-.indicatorCard { min-width: 0; padding: 13px; display: flex; align-items: center; gap: 10px; background: rgb(255 255 255 / 75%); border: 1px solid var(--border); border-radius: 14px; }
-.indicatorIcon { width: 35px; height: 35px; flex: none; display: grid; place-items: center; color: var(--marker); background: color-mix(in srgb, var(--marker) 9%, white); border-radius: 50%; }.indicatorIcon svg { width: 17px; }
-.indicatorCard strong { display: block; overflow: hidden; text-overflow: ellipsis; color: var(--ink); font-size: 11px; font-weight: 700; line-height: 1.35; white-space: nowrap; }.indicatorCard small { margin-top: 5px; display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; line-height: 1.35; }.indicatorCard i { width: 5px; height: 5px; flex: none; background: var(--marker); border-radius: 50%; }
-=======
 .summaryCard p { color: var(--plum); white-space: pre-line; font-family: var(--font-body); font-size: 17px; font-weight: 400; letter-spacing: 0; line-height: 1.68; }
 .reportSection { margin-top: 26px; }
 .reportSection h3 { color: var(--ink); font: 700 22px/1.1 var(--font-body); letter-spacing: -.02em; }
@@ -207,22 +163,14 @@
 .indicatorCopy strong { display: block; overflow: hidden; color: var(--ink); font: 700 19px/1.15 var(--font-body); letter-spacing: -.015em; text-overflow: ellipsis; white-space: nowrap; }
 .indicatorStatus { grid-column: 1 / -1; width: fit-content; padding: 6px 11px; display: inline-flex; align-items: center; gap: 6px; color: var(--marker); background: color-mix(in srgb, var(--marker) 9%, white); border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 1; }
 .indicatorStatus svg { width: 13px; height: 13px; stroke-width: 3; }
->>>>>>> origin/Camila
 .sectionRow { display: flex; align-items: center; justify-content: space-between; gap: 16px; }.sectionRow > span { color: var(--muted); font-size: 9px; }
 .products { display: grid; gap: 10px; margin-top: 12px; }
 .productCard { padding: 12px; display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; gap: 14px; align-items: center; background: rgb(255 255 255 / 90%); border: 1px solid var(--border); border-radius: 15px; }
 .productCard:hover { border-color: var(--dusty); box-shadow: 0 9px 24px rgb(88 30 46 / 6%); }
-<<<<<<< HEAD
-.productImage { width: 72px; height: 72px; display: grid; place-items: center; overflow: hidden; background: var(--ivory); border-radius: 10px; }.productImage img { max-width: 58px; max-height: 58px; object-fit: contain; }
-.productCopy { min-width: 0; }.productCopy > span { color: var(--mauve); font-size: 9px; font-weight: 700; letter-spacing: .12em; line-height: 1.4; text-transform: uppercase; }.productCopy h4 { margin-top: 2px; color: var(--ink); font: 600 18px/1.1 var(--font-serif), serif; letter-spacing: -.01em; }.productCopy p { margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 16px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-weight: 400; }
-.productTags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }.productTags span { padding: 3px 6px; color: var(--plum); background: var(--blush); border-radius: 999px; font-size: 7px; font-weight: 700; text-transform: uppercase; }
-.productAction { height: 100%; min-width: 72px; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; }.productAction strong { font-size: 11px; }.productAction button { min-width: 68px; padding: 7px 10px; display: flex; justify-content: center; align-items: center; gap: 4px; color: white; background: var(--plum); border: 0; border-radius: 999px; font-size: 9px; font-weight: 700; }.productAction button:hover { background: var(--plum-deep); }.productAction svg { width: 11px; }
-=======
 .productImage { width: 78px; height: 78px; display: grid; place-items: center; overflow: hidden; background: var(--ivory); border-radius: 11px; }.productImage img { max-width: 66px; max-height: 66px; object-fit: contain; }
 .productCopy { min-width: 0; }.productCopy > span { color: var(--mauve); font-size: 11px; font-weight: 600; letter-spacing: .09em; line-height: 1.4; text-transform: uppercase; }.productCopy h4 { margin-top: 3px; color: var(--ink); font: 700 18px/1.15 var(--font-body); letter-spacing: -.015em; }.productCopy p { margin-top: 6px; overflow: hidden; color: #685d62; font-size: 13px; font-weight: 400; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .productTags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }.productTags span { padding: 4px 8px; color: var(--plum); background: var(--blush); border-radius: 999px; font-size: 9px; font-weight: 700; line-height: 1.2; text-transform: uppercase; }
 .productAction { height: 100%; min-width: 72px; display: flex; align-items: flex-start; justify-content: flex-end; }.productAction strong { padding: 6px 10px; color: var(--plum); background: var(--blush); border: 1px solid var(--border); border-radius: 999px; font-family: var(--font-metric); font-size: 11px; font-weight: 700; white-space: nowrap; }
->>>>>>> origin/Camila
 .report .progress { margin-top: 26px; }
 
 .productShelf { width: min(calc(100% - clamp(28px, 3.2vw, 56px)), 1864px); margin: 0 auto clamp(28px, 3vw, 48px); padding: clamp(22px, 2.2vw, 36px); background: rgb(255 253 252 / 90%); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 26px 26px; }
@@ -282,8 +230,6 @@
   .resultCapture, .resultInfo { padding: 26px 18px; border-left: 0; border-right: 0; border-radius: 0; }
   .sectionHeading { align-items: flex-start; flex-direction: column; }.sectionHeading h1, .sectionHeading h2 { font-size: 36px; }
   .viewport, .placeholder { min-height: 460px; aspect-ratio: 4 / 5; }
-  .faceGuide { width: 57%; height: 68%; }
-  .guideMessage { bottom: 14px; font-size: 10px; }
   .primaryActions, .belowActions { width: 100%; flex-direction: column; }.primaryActions button, .belowActions button { width: 100%; }
   .introCard { grid-template-columns: 45px 1fr; padding: 16px; }.introIcon { width: 45px; height: 45px; }
   .indicators { grid-template-columns: 1fr; }

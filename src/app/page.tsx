@@ -77,11 +77,7 @@ export default function Home() {
             <span className="font-bold text-brand-dusty-rose">Con ciencia e inteligencia.</span>
           </h1>
 
-<<<<<<< HEAD
-          <p className="text-base md:text-lg text-brand-plum/90 font-normal leading-relaxed mb-10 max-w-xl">
-=======
           <p className="text-base md:text-lg text-brand-plum/80 font-normal leading-relaxed mb-10 max-w-xl">
->>>>>>> origin/Camila
             IA_COSMETIC fusiona visión computacional U-Net con formulación boutique para ofrecerte un diagnóstico profundo y recomendaciones personalizadas en tiempo real de forma científica.
           </p>
 
@@ -116,42 +112,6 @@ export default function Home() {
             {/* Subtle color integration */}
             <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/10 to-brand-rose/10 mix-blend-multiply" />
             
-<<<<<<< HEAD
-            {/* Futuristic Animated SVG Wireframe Layer */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-80" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Outer boundary contour loop delimiting the face scan zone */}
-              <path d="M130,110 L200,85 L270,110 L280,190 L265,280 L200,330 L135,280 L120,190 Z" stroke="#581E2E" strokeWidth="1.5" opacity="0.6" />
-              
-              {/* Inner scanning geometry mapping key facial features (eyes, nose, cheeks) */}
-              <path d="M200,85 L200,195 L200,280 L200,330" stroke="#581E2E" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-              <path d="M120,190 L165,160 L200,195 L235,160 L280,190" stroke="#581E2E" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-              <path d="M165,160 L160,240 L200,280 L240,240 L235,160" stroke="#581E2E" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-              <path d="M135,280 L160,240 L200,195 L240,240 L265,280" stroke="#581E2E" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-              
-              {/* Outer boundary delimitation nodes */}
-              <circle cx="200" cy="85" r="3.5" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1.5" />
-              <circle cx="130" cy="110" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="270" cy="110" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="120" cy="190" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="280" cy="190" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="135" cy="280" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="265" cy="280" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="200" cy="330" r="3.5" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1.5" />
-
-              {/* Inner features target nodes (eyes, nose, cheeks, mouth) */}
-              <circle cx="165" cy="160" r="3" fill="#581E2E" className="animate-pulse" />
-              <circle cx="235" cy="160" r="3" fill="#581E2E" className="animate-pulse" />
-              <circle cx="160" cy="240" r="3" fill="#581E2E" className="animate-pulse" />
-              <circle cx="240" cy="240" r="3" fill="#581E2E" className="animate-pulse" />
-              <circle cx="200" cy="280" r="3" fill="#581E2E" />
-              
-              {/* Main Analysis Center Point (nose bridge) */}
-              <circle cx="200" cy="195" r="5" fill="#581E2E" className="animate-ping" style={{ animationDuration: '3s' }} />
-              <circle cx="200" cy="195" r="3" fill="#581E2E" />
-
-              {/* Horizontal scanning light bar */}
-              <line x1="0" y1="180" x2="400" y2="180" stroke="#581E2E" strokeWidth="1" opacity="0.3" className="animate-bounce" style={{ animationDuration: '7s' }} />
-=======
             {/* Minimal animated skin-analysis layer */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-75" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <defs>
@@ -197,9 +157,7 @@ export default function Home() {
                   <animate attributeName="y" values="100;352;100" dur="6s" repeatCount="indefinite" />
                 </rect>
               </g>
->>>>>>> origin/Camila
             </svg>
-
           </div>
         </div>
       </section>
@@ -212,16 +170,11 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Camera className="w-5 h-5" />
               </div>
-<<<<<<< HEAD
-              <h3 className="font-serif text-xl font-medium mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
-              <p className="text-lg text-brand-plum/90 font-normal leading-relaxed">
-=======
               <h3 className="font-sans text-lg font-bold mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
               <p className="text-sm text-brand-plum/70 font-normal leading-relaxed">
->>>>>>> origin/Camila
                 Escaneo instantáneo de imperfecciones para evaluar acné, manchas de sol, líneas de expresión e hiperpigmentación con alta precisión.
               </p>
-              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
                 Conocer más &rarr;
               </Link>
             </div>
@@ -230,17 +183,11 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-rose/40 flex items-center justify-center text-brand-plum mb-6">
                 <Cpu className="w-5 h-5" />
               </div>
-<<<<<<< HEAD
-              <h3 className="font-serif text-xl font-medium mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
-              <p className="text-lg text-brand-plum/90 font-normal leading-relaxed">
-                Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance cellular de tu rostro.
-=======
               <h3 className="font-sans text-lg font-bold mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
               <p className="text-sm text-brand-plum/70 font-normal leading-relaxed">
                 Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance celular de tu rostro.
->>>>>>> origin/Camila
               </p>
-              <a href="#productos" className="inline-flex items-center gap-1.5 text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <a href="#productos" className="inline-flex items-center gap-1.5 text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
                 Conocer más &rarr;
               </a>
             </div>
@@ -249,16 +196,11 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Sparkle className="w-5 h-5" />
               </div>
-<<<<<<< HEAD
-              <h3 className="font-serif text-xl font-medium mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
-              <p className="text-lg text-brand-plum/90 font-normal leading-relaxed">
-=======
               <h3 className="font-sans text-lg font-bold mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
               <p className="text-sm text-brand-plum/70 font-normal leading-relaxed">
->>>>>>> origin/Camila
                 Rutinas y combinaciones personalizadas basadas en tu análisis biométrico, conectadas de forma dinámica a nuestro catálogo inteligente.
               </p>
-              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
                 Conocer más &rarr;
               </Link>
             </div>
@@ -270,13 +212,8 @@ export default function Home() {
       <section className="bg-brand-lavender py-20 px-6 sm:px-12 border-b border-brand-dusty-rose/10">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
           <div className="lg:max-w-md">
-<<<<<<< HEAD
-            <span className="text-sm tracking-widest text-brand-plum uppercase font-bold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
-            <h2 className="font-serif text-4xl sm:text-5xl text-brand-plum font-light leading-snug">
-=======
             <span className="text-xs tracking-widest text-brand-plum uppercase font-bold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
             <h2 className="font-display text-3xl sm:text-4xl text-brand-plum font-bold leading-tight tracking-[-0.03em]">
->>>>>>> origin/Camila
               Beneficios que se ven, ciencia que se siente.
             </h2>
           </div>
@@ -286,13 +223,8 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-<<<<<<< HEAD
-                <h4 className="font-serif text-2xl font-semibold text-brand-plum">Diagnóstico preciso</h4>
-                <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
-=======
                 <h4 className="font-sans text-lg font-bold text-brand-plum">Diagnóstico preciso</h4>
                 <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
->>>>>>> origin/Camila
               </div>
             </div>
             <div className="flex gap-4">
@@ -300,13 +232,8 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-<<<<<<< HEAD
-                <h4 className="font-serif text-2xl font-semibold text-brand-plum">Personalización real</h4>
-                <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
-=======
                 <h4 className="font-sans text-lg font-bold text-brand-plum">Personalización real</h4>
                 <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
->>>>>>> origin/Camila
               </div>
             </div>
             <div className="flex gap-4">
@@ -314,13 +241,8 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-<<<<<<< HEAD
-                <h4 className="font-serif text-2xl font-semibold text-brand-plum">Resultados visibles</h4>
-                <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
-=======
                 <h4 className="font-sans text-lg font-bold text-brand-plum">Resultados visibles</h4>
                 <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
->>>>>>> origin/Camila
               </div>
             </div>
             <div className="flex gap-4">
@@ -328,13 +250,8 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-<<<<<<< HEAD
-                <h4 className="font-serif text-2xl font-semibold text-brand-plum">Seguridad & transparencia</h4>
-                <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
-=======
                 <h4 className="font-sans text-lg font-bold text-brand-plum">Seguridad & transparencia</h4>
                 <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
->>>>>>> origin/Camila
               </div>
             </div>
           </div>
@@ -345,13 +262,8 @@ export default function Home() {
       <section id="productos" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto w-full">
         <div className="flex justify-between items-end mb-12">
           <div>
-<<<<<<< HEAD
-            <span className="text-xs tracking-widest text-brand-plum/70 uppercase block mb-3 font-bold">FÓRMULAS DESTACADAS</span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-light tracking-wide text-brand-plum">
-=======
             <span className="text-[10px] tracking-widest text-brand-plum/70 uppercase block mb-3 font-bold">FÓRMULAS DESTACADAS</span>
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-brand-plum">
->>>>>>> origin/Camila
               Selección IA_Cosmetic
             </h2>
           </div>
@@ -369,28 +281,23 @@ export default function Home() {
               key={index} 
               className="bg-white border border-brand-dusty-rose/20 rounded-[2rem] overflow-hidden hover:shadow-xl hover:border-brand-dusty-rose transition-all duration-500 group flex flex-col h-full shadow-sm"
             >
-              <div className="relative aspect-[4/5] w-full bg-brand-sand/20 overflow-hidden border-b border-brand-dusty-rose/10">
+              <div className="relative aspect-[4/5] w-full bg-brand-sand/20 overflow-hidden flex items-center justify-center p-6 border-b border-brand-dusty-rose/10">
                 <Image 
                   src={product.image} 
                   alt={product.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-contain p-4 transition-transform duration-700 group-hover:scale-105"
+                  width={200}
+                  height={250}
+                  className="object-contain transition-transform duration-700 group-hover:scale-105"
                   priority
                 />
-                <span className="absolute top-4 left-4 bg-brand-lavender text-brand-plum border border-brand-dusty-rose/40 px-3 py-1 rounded-full text-[9px] tracking-widest font-bold uppercase z-10">
+                <span className="absolute top-4 left-4 bg-brand-lavender text-brand-plum border border-brand-dusty-rose/40 px-3 py-1 rounded-full text-[9px] tracking-widest font-bold uppercase">
                   {product.tag}
                 </span>
               </div>
               <div className="p-6 flex flex-col flex-1">
                 <span className="text-[10px] text-brand-dusty-rose tracking-widest uppercase mb-1 font-semibold">{product.type}</span>
-<<<<<<< HEAD
-                <h3 className="font-serif text-xl font-semibold text-brand-plum mb-2 leading-snug">{product.name}</h3>
-                <p className="text-lg text-brand-plum/90 font-normal leading-relaxed mb-6 flex-1">{product.description}</p>
-=======
                 <h3 className="font-sans text-base font-bold text-brand-plum mb-2 leading-snug">{product.name}</h3>
                 <p className="text-sm text-brand-plum/70 font-normal leading-relaxed mb-6 flex-1">{product.description}</p>
->>>>>>> origin/Camila
                 <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
                   <span className="font-metric font-bold text-sm text-brand-plum">{product.price}</span>
                   <Link 

@@ -1,59 +1,116 @@
 import React from 'react';
 
-type LogoProps = {
-  showTagline?: boolean;
-  className?: string;
-  alignment?: 'horizontal' | 'vertical';
-};
-
-export function LogoIcon({ className = 'h-12 w-12' }: { className?: string }) {
+export function LogoIcon({ className = "w-8 h-8" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 120 120"
-      className={className}
+      viewBox="0 0 100 100"
+      className={`${className} flex-shrink-0`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
+      preserveAspectRatio="xMidYMid meet"
     >
-      <defs>
-        <linearGradient id="logoGold" x1="68" y1="70" x2="105" y2="108" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#D2B477" />
-          <stop offset="1" stopColor="#A9823F" />
-        </linearGradient>
-      </defs>
+      {/* Outer elegant hair curve */}
+      <path
+        d="M 32 72 C 20 60 18 36 34 22 C 45 10 58 16 63 21"
+        stroke="currentColor"
+        className="text-brand-dusty-rose"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      
+      {/* Inner hair curves - thick elegant stroke */}
+      <path
+        d="M 35 65 C 27 50 31 33 42 24"
+        stroke="currentColor"
+        className="text-brand-plum"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 38 70 C 31 55 36 41 45 31"
+        stroke="currentColor"
+        className="text-brand-plum/70"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
 
-      <path d="M55 12C31 11 13 28 10 52c-3 27 12 47 35 56" stroke="#8C3D60" strokeWidth="4" strokeLinecap="round" />
-      <path d="M55 18c-2 15-10 23-22 32-11 9-17 22-15 39" stroke="#8C3D60" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M57 19c-3 18-16 25-27 36-13 13-15 35 4 52" stroke="#8C3D60" strokeWidth="4" strokeLinecap="round" />
-      <path d="M58 20c5 8 6 17 5 25 0 5 4 9 10 14 3 3 2 6-2 8l-4 2c2 2 2 4 0 6 2 2 1 4-1 5-4 2-7 3-8 8-1 5 2 8 6 11" stroke="#8C3D60" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M50 48c4 3 8 3 12 0" stroke="#8C3D60" strokeWidth="2.3" strokeLinecap="round" />
-      <path d="M55 46v-3M60 47l2-3M51 47l-2-2" stroke="#8C3D60" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="66" cy="84" r="21" stroke="url(#logoGold)" strokeWidth="4" />
-      <path d="M81 99l16 16" stroke="url(#logoGold)" strokeWidth="7" strokeLinecap="round" />
-      <path d="M54 84c0-7 5-12 12-12" stroke="#8C3D60" strokeWidth="3" strokeLinecap="round" />
+      {/* Face Profile line (Nose, Lips, Chin, Neck) */}
+      <path
+        d="M 48 24 C 52 27 53 30 51 32 C 53 33 55 35 53 38 C 52 40 50 40 49 41 C 50 43 51 45 49 46 C 45 48 42 47 40 55 C 38 60 39 65 42 70"
+        stroke="currentColor"
+        className="text-brand-plum"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+
+      {/* Closed eye / eyelash */}
+      <path
+        d="M 45 32 Q 47 33 49 32"
+        stroke="currentColor"
+        className="text-brand-plum"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+
+      {/* Magnifying Glass (Thin circle & handle) */}
+      <circle
+        cx="58"
+        cy="51"
+        r="11"
+        stroke="currentColor"
+        className="text-brand-dusty-rose"
+        strokeWidth="1.5"
+        fill="white"
+        fillOpacity="0.05"
+      />
+      <rect
+        x="65"
+        y="58"
+        width="3"
+        height="8"
+        rx="1.5"
+        transform="rotate(-45 65 58)"
+        fill="currentColor"
+        className="text-brand-plum"
+      />
+
+      {/* Connected nodes (Constellation representing U-Net/AI Skin logic) inside glass */}
+      <circle cx="53" cy="52" r="1" fill="currentColor" className="text-brand-dusty-rose" />
+      <circle cx="59" cy="47" r="1" fill="currentColor" className="text-brand-dusty-rose" />
+      <circle cx="62" cy="53" r="1" fill="currentColor" className="text-brand-dusty-rose" />
+      <circle cx="57" cy="56" r="1" fill="currentColor" className="text-brand-dusty-rose" />
+      
+      <line x1="53" y1="52" x2="59" y2="47" stroke="currentColor" className="text-brand-dusty-rose/30" strokeWidth="0.5" />
+      <line x1="59" y1="47" x2="62" y2="53" stroke="currentColor" className="text-brand-dusty-rose/30" strokeWidth="0.5" />
+      <line x1="62" y1="53" x2="57" y2="56" stroke="currentColor" className="text-brand-dusty-rose/30" strokeWidth="0.5" />
+      <line x1="57" y1="56" x2="53" y2="52" stroke="currentColor" className="text-brand-dusty-rose/30" strokeWidth="0.5" />
+      <line x1="53" y1="52" x2="62" y2="53" stroke="currentColor" className="text-brand-dusty-rose/30" strokeWidth="0.5" />
+
+      {/* Sparkles / Stars */}
+      {/* Sparkle inside the magnifying glass */}
+      <path
+        d="M 55 43 L 56 44 L 55 45 L 54 44 Z"
+        fill="currentColor"
+        className="text-brand-accent"
+      />
+      {/* Large star in upper right */}
+      <path
+        d="M 64 31 L 65 32.5 L 66 31 L 65 29.5 Z"
+        fill="currentColor"
+        className="text-brand-dusty-rose"
+      />
+      {/* Small star below it */}
+      <path
+        d="M 66 37 L 66.5 38 L 67 37 L 66.5 36 Z"
+        fill="currentColor"
+        className="text-brand-dusty-rose/70"
+      />
+      {/* Tiny dot */}
+      <circle cx="69" cy="34" r="0.8" fill="currentColor" className="text-brand-accent" />
     </svg>
   );
 }
 
-<<<<<<< HEAD
-export default function Logo({ showTagline = false, className = '', alignment = 'horizontal' }: LogoProps) {
-  const isVertical = alignment === 'vertical';
-
-  return (
-    <div
-      className={`${isVertical ? 'flex-col text-center' : 'flex-row'} flex shrink-0 items-center gap-2.5 ${className}`}
-      aria-label="IA Cosmetic"
-    >
-      <LogoIcon className={`${isVertical ? 'h-20 w-20' : 'h-12 w-12'} shrink-0`} />
-      <div className={`${isVertical ? 'items-center' : 'items-start'} flex flex-col justify-center`}>
-        <div className="flex items-baseline whitespace-nowrap font-serif leading-none">
-          <span className="text-[1.35rem] font-medium tracking-[0.2em] text-[#8C3D60]">IA</span>
-          <span
-            className="ml-3 bg-gradient-to-r from-[#B18B4B] via-[#D0B174] to-[#A77E38] bg-clip-text text-[1.35rem] font-normal tracking-[0.12em] text-transparent"
-          >
-            Cosmetic
-          </span>
-=======
 export default function Logo({ showTagline = false, className = "", alignment = "horizontal" }: { showTagline?: boolean, className?: string, alignment?: "horizontal" | "vertical" }) {
   if (alignment === "vertical") {
     return (
@@ -87,11 +144,10 @@ export default function Logo({ showTagline = false, className = "", alignment = 
         <div className="font-display text-lg tracking-[0.07em] font-bold leading-none flex items-center">
           <span className="text-brand-plum font-bold">IA</span>
           <span className="text-brand-accent font-semibold tracking-[0.09em] ml-2">COSMETIC</span>
->>>>>>> origin/Camila
         </div>
         {showTagline && (
-          <span className="mt-1.5 text-[7px] font-semibold uppercase tracking-[0.24em] text-[#8C3D60]/70">
-            Ciencia inteligente para tu piel
+          <span className="text-[6.5px] tracking-[0.25em] uppercase font-sans text-brand-plum/70 font-semibold mt-1">
+            CIENCIA INTELIGENTE PARA TU PIEL
           </span>
         )}
       </div>
