@@ -103,40 +103,60 @@ export default function Home() {
           <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden border border-brand-dusty-rose/30 shadow-2xl bg-brand-rose/10">
             {/* The generated high-end model face image */}
             <Image
-              src="/hero-skin.png"
-              alt="Análisis Dermo-Cosmético de Piel"
+              src="/hero-skin-natural.png"
+              alt="Retrato con piel natural y textura visible"
               fill
               className="object-cover"
               priority
             />
-            {/* U-Net Grid Overlay Mask */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/30 to-brand-rose/30 mix-blend-multiply" />
+            {/* Subtle color integration */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/10 to-brand-rose/10 mix-blend-multiply" />
             
-            {/* Futuristic Animated SVG Wireframe Layer */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-80" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Mesh connection lines mapping the facial features */}
-              <path d="M120,150 L200,120 L280,150 L310,220 L200,280 L90,220 Z" stroke="#581E2E" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
-              <path d="M120,150 L200,200 L280,150 L280,240 L200,280 L120,240 Z" stroke="#581E2E" strokeWidth="1.2" opacity="0.4" />
-              <path d="M200,120 L200,200 L200,280" stroke="#581E2E" strokeWidth="1" opacity="0.5" />
-              <path d="M90,220 L200,200 L310,220" stroke="#581E2E" strokeWidth="1" opacity="0.5" />
-              
-              {/* Nodes */}
-              <circle cx="120" cy="150" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" className="animate-pulse" />
-              <circle cx="200" cy="120" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="280" cy="150" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" className="animate-pulse" />
-              <circle cx="310" cy="220" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="200" cy="280" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="90" cy="220" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
-              <circle cx="200" cy="200" r="4.5" fill="#581E2E" className="animate-ping" style={{ animationDuration: '3.5s' }} />
-              <circle cx="200" cy="200" r="2.5" fill="#581E2E" />
+            {/* Minimal animated skin-analysis layer */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-75" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <clipPath id="heroFaceClip"><ellipse cx="205" cy="226" rx="116" ry="160" /></clipPath>
+                <linearGradient id="heroScanBeam" x1="85" y1="0" x2="325" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#F7F4F1" stopOpacity="0" />
+                  <stop offset="0.18" stopColor="#F7F4F1" stopOpacity="0.85" />
+                  <stop offset="0.5" stopColor="#DCC0C6" />
+                  <stop offset="0.82" stopColor="#F7F4F1" stopOpacity="0.85" />
+                  <stop offset="1" stopColor="#F7F4F1" stopOpacity="0" />
+                </linearGradient>
+                <filter id="heroScanGlow" x="-20%" y="-300%" width="140%" height="700%">
+                  <feGaussianBlur stdDeviation="4" />
+                </filter>
+              </defs>
 
-              {/* Diagnostic markers */}
-              <path d="M150,220 L180,240 L220,240 L250,220" stroke="#DCC6D6" strokeWidth="1" />
-              <circle cx="150" cy="220" r="2" fill="#DCC6D6" />
-              <circle cx="250" cy="220" r="2" fill="#DCC6D6" />
-              
-              {/* Horizontal scanning light bar */}
-              <line x1="0" y1="180" x2="400" y2="180" stroke="#581E2E" strokeWidth="1" opacity="0.3" className="animate-bounce" style={{ animationDuration: '7s' }} />
+              <ellipse cx="205" cy="226" rx="116" ry="160" stroke="#F7F4F1" strokeWidth="1" strokeDasharray="5 7" opacity="0.52" />
+
+              <g stroke="#581E2E" strokeWidth="0.8" opacity="0.42">
+                <path d="M200 112 L146 190 L205 238 L252 188 L200 112" />
+                <path d="M146 190 L126 244 L205 238 L274 240 L252 188" />
+                <path d="M126 244 L174 282 L205 238 L235 281 L274 240" />
+                <path d="M174 282 L207 324 L235 281" />
+                <path d="M146 190 L252 188 M174 282 L235 281" strokeDasharray="3 5" />
+              </g>
+
+              {[
+                [200, 112, '0s'], [146, 190, '.35s'], [252, 188, '.7s'],
+                [205, 238, '1.05s'], [126, 244, '1.4s'], [274, 240, '1.75s'],
+                [174, 282, '2.1s'], [235, 281, '2.45s'], [207, 324, '2.8s'],
+              ].map(([cx, cy, delay], index) => (
+                <g key={index} className="animate-pulse" style={{ animationDelay: String(delay), animationDuration: '2.8s' }}>
+                  <circle cx={Number(cx)} cy={Number(cy)} r="5" fill="#F7F4F1" fillOpacity="0.82" />
+                  <circle cx={Number(cx)} cy={Number(cy)} r="2.6" fill="#581E2E" />
+                </g>
+              ))}
+
+              <g clipPath="url(#heroFaceClip)">
+                <rect x="82" y="96" width="246" height="10" fill="url(#heroScanBeam)" opacity="0.28" filter="url(#heroScanGlow)">
+                  <animate attributeName="y" values="96;348;96" dur="6s" repeatCount="indefinite" />
+                </rect>
+                <rect x="82" y="100" width="246" height="2" fill="url(#heroScanBeam)">
+                  <animate attributeName="y" values="100;352;100" dur="6s" repeatCount="indefinite" />
+                </rect>
+              </g>
             </svg>
           </div>
         </div>
