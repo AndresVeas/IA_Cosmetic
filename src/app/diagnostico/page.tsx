@@ -1,9 +1,31 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Camera, RefreshCw, Upload, Sparkles, Check, ArrowLeft, Loader2, Beaker, HelpCircle, FlipHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import Logo from '@/components/Logo';
+import type { LucideIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Camera,
+  Check,
+  CheckCircle2,
+  CircleDot,
+  Eye,
+  FlipHorizontal,
+  Info,
+  Lightbulb,
+  Loader2,
+  LockKeyhole,
+  RefreshCw,
+  ScanFace,
+  ShieldCheck,
+  Sparkles,
+  SunMedium,
+  Upload,
+  Waves,
+} from 'lucide-react';
+import styles from './diagnostico.module.css';
 
 interface VisualOverlay {
   type: string;
@@ -30,6 +52,47 @@ interface AnalysisResponse {
   products: Product[];
 }
 
+const anomalyMeta: Record<string, { label: string; tone: string; icon: LucideIcon }> = {
+  acne: { label: 'Acné', tone: styles.acne, icon: CircleDot },
+  manchas: { label: 'Hiperpigmentación', tone: styles.spots, icon: SunMedium },
+  arrugas: { label: 'Líneas / arrugas', tone: styles.lines, icon: Waves },
+};
+
+function getAnomalyMeta(type: string) {
+  return anomalyMeta[type] ?? { label: 'Otra condición', tone: styles.other, icon: ScanFace };
+}
+
+function DiagnosisProgress({ analyzed = false }: { analyzed?: boolean }) {
+  return (
+    <div className={styles.progress} aria-label={`Paso ${analyzed ? 2 : 1} de 2`}>
+      {[
+        ['1', 'Captura', analyzed ? 'Completado' : 'Actual'],
+        ['2', 'Análisis', analyzed ? 'Resultado disponible' : 'Siguiente paso'],
+      ].map(([number, label, caption], index) => (
+        <div className={styles.progressStep} key={number}>
+          <div className={`${styles.progressNumber} ${index < (analyzed ? 2 : 1) ? styles.progressActive : ''}`}>
+            {analyzed && index === 0 ? <Check size={14} /> : number}
+          </div>
+          <strong>{label}</strong>
+          <span>{caption}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IntroCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className={styles.introCard}>
+      <span className={styles.introIcon}>{icon}</span>
+      <div>
+        <h3>{title}</h3>
+        <p>{children}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function DiagnosticoPage() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -37,572 +100,365 @@ export default function DiagnosticoPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [addedProducts, setAddedProducts] = useState<Record<string, boolean>>({});
   const [isMirrored, setIsMirrored] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
-  // Initialize camera stream
   const startCamera = async () => {
     try {
       setError(null);
       setCapturedImage(null);
       setResults(null);
-      
+
       let mediaStream: MediaStream;
       try {
-        // Try high quality first
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'user', 
-            width: { ideal: 1920 }, 
-            height: { ideal: 1080 } 
-          },
-          audio: false
+          video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
         });
-      } catch (firstErr: any) {
-        console.warn("Could not start camera with HD constraints. Falling back to default constraints.", firstErr);
-        // Fallback to basic video stream
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
-          audio: false
-        });
+      } catch (firstErr: unknown) {
+        console.warn('Could not start camera with HD constraints. Falling back to default constraints.', firstErr);
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
       }
-      
+
       setStream(mediaStream);
       setIsCameraActive(true);
-    } catch (err: any) {
-      console.error("Camera access error:", err);
-      
-      let errorMsg = "No se pudo acceder a la cámara.";
-      if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMsg = "La cámara está siendo utilizada por otra aplicación (como Zoom, Teams, u otra pestaña) o el sistema no permite el acceso. Por favor, ciérrala e intenta de nuevo.";
-      } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMsg = "Acceso a la cámara denegado. Por favor, permite el acceso en los permisos de tu navegador.";
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMsg = "No se detectó ninguna cámara en este dispositivo. Puedes subir una imagen desde tu galería.";
-      } else {
-        errorMsg += " Por favor verifica tu conexión o sube una imagen de tu galería.";
+    } catch (err: unknown) {
+      console.error('Camera access error:', err);
+      const errorName = err instanceof DOMException ? err.name : '';
+      let errorMsg = 'No se pudo acceder a la cámara.';
+      if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+        errorMsg = 'La cámara está siendo utilizada por otra aplicación o el sistema no permite el acceso. Ciérrala e intenta de nuevo.';
+      } else if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
+        errorMsg = 'Acceso a la cámara denegado. Permite el acceso desde los ajustes del navegador.';
+      } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
+        errorMsg = 'No se detectó ninguna cámara. Puedes subir una imagen desde tus archivos.';
       }
-      
       setError(errorMsg);
       setIsCameraActive(false);
     }
   };
 
-  // Stop camera stream
   const stopCamera = () => {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
       setIsCameraActive(false);
     }
   };
 
-  // Capture frame from video and triggers analysis
-  const capturePhoto = () => {
-    if (videoRef.current) {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 1920;
-      canvas.height = video.videoHeight || 1080;
-      const ctx = canvas.getContext('2d');
-      
-      if (ctx) {
-        // If mirroring is active, flip canvas context before drawing
-        if (isMirrored) {
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-        }
-        
-        // Draw the current video frame on the canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Reset transformation matrix to default
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        
-        // Export high-quality image (0.95 quality)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-        setCapturedImage(dataUrl);
-        stopCamera();
-        analyzeSkin(dataUrl);
-      }
-    }
-  };
-
-  // Handle image upload fallback
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setCapturedImage(dataUrl);
-        stopCamera();
-        analyzeSkin(dataUrl);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Call internal Next.js API for Vision / Database query
   const analyzeSkin = async (imageBase64: string) => {
     setIsAnalyzing(true);
     setResults(null);
     setError(null);
-
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageBase64 })
+        body: JSON.stringify({ image: imageBase64 }),
       });
-
-      if (!res.ok) {
-        throw new Error('Error al procesar el análisis de piel.');
-      }
-
-      const data: AnalysisResponse = await res.json();
-      setResults(data);
-    } catch (err: any) {
-      console.error("Analysis error:", err);
-      setError("Ocurrió un error al contactar el laboratorio de diagnóstico.");
+      if (!res.ok) throw new Error('Error al procesar el análisis de piel.');
+      setResults((await res.json()) as AnalysisResponse);
+    } catch (err: unknown) {
+      console.error('Analysis error:', err);
+      setError('Ocurrió un error al procesar el análisis dermocosmético.');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // Toggle routine items
-  const toggleRoutineProduct = (productId: string) => {
-    setAddedProducts(prev => ({
-      ...prev,
-      [productId]: !prev[productId]
-    }));
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1920;
+    canvas.height = video.videoHeight || 1080;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (isMirrored) {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    setCapturedImage(dataUrl);
+    stopCamera();
+    analyzeSkin(dataUrl);
   };
 
-  // Clean up camera on unmount
-  useEffect(() => {
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result as string;
+      setCapturedImage(dataUrl);
+      stopCamera();
+      analyzeSkin(dataUrl);
     };
-  }, [stream]);
+    reader.readAsDataURL(file);
+  };
 
-  // Scroll to results on mobile after skin analysis is triggered
+  useEffect(() => () => stream?.getTracks().forEach((track) => track.stop()), [stream]);
+
   useEffect(() => {
     if ((results || isAnalyzing) && window.innerWidth < 1024) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [results, isAnalyzing]);
 
-  // Color mappings for UI anomalies
-  const getColorClasses = (type: string) => {
-    switch (type) {
-      case 'acne':
-        return {
-          bg: 'bg-red-500',
-          border: 'border-red-500',
-          text: 'text-red-600',
-          lightBg: 'bg-red-50',
-          label: 'Acné',
-        };
-      case 'manchas':
-        return {
-          bg: 'bg-emerald-500',
-          border: 'border-emerald-500',
-          text: 'text-emerald-600',
-          lightBg: 'bg-emerald-50',
-          label: 'Hiperpigmentación',
-        };
-      case 'arrugas':
-        return {
-          bg: 'bg-indigo-500',
-          border: 'border-indigo-500',
-          text: 'text-indigo-600',
-          lightBg: 'bg-indigo-50',
-          label: 'Líneas/Arrugas',
-        };
-      default:
-        return {
-          bg: 'bg-amber-500',
-          border: 'border-amber-500',
-          text: 'text-amber-600',
-          lightBg: 'bg-amber-50',
-          label: 'Anomalía',
-        };
-    }
-  };
+  const hasResult = Boolean(results && capturedImage && !isAnalyzing);
 
   return (
-    <div className="min-h-screen lg:h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#8E7E73]/20 lg:overflow-hidden">
-      {/* Mini Header */}
-      <header className="border-b border-[#8E7E73]/10 py-5 px-6 sm:px-8 flex justify-between items-center bg-[#FDFBF7]">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-[#8E7E73] hover:text-[#1A1A1A] transition-colors duration-300">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <span className="font-serif text-lg tracking-[0.15em] font-light text-[#1A1A1A]">IA_COSMETIC</span>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.brandGroup}>
+          <Link href="/" className={styles.back} aria-label="Volver al inicio"><ArrowLeft /></Link>
+          <Logo className={styles.moduleLogo} />
         </div>
-        <div className="flex gap-2">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F5EFEB] border border-[#8E7E73]/20 text-[10px] text-[#8E7E73] tracking-widest uppercase font-semibold">
-            <Sparkles className="w-3 h-3 text-[#8E7E73]" />
-            U-Net Vision 1.0
-          </div>
-        </div>
+        <span className={styles.visionBadge}><Sparkles /> U-Net Vision 1.0</span>
       </header>
 
-      {/* Main Workspace split screen */}
-      <div className="flex-1 grid lg:grid-cols-12 gap-0 lg:overflow-hidden">
-        {/* Left Panel: Camera capture and drawing */}
-        <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col items-center justify-center border-r border-[#8E7E73]/10 bg-[#FDFBF7] lg:h-full lg:overflow-y-auto">
-          <div className="w-full max-w-2xl flex flex-col gap-6">
-            <div className="flex justify-between items-center">
+      {!capturedImage && !isAnalyzing && (
+        <div className={styles.initialIntro}>
+          <span><Sparkles /></span>
+          <div>
+            <h1>Tu análisis comenzará aquí</h1>
+            <p>Captura tu rostro para obtener un análisis inteligente y recomendaciones personalizadas.</p>
+          </div>
+        </div>
+      )}
+
+      {hasResult && (
+        <div className={styles.resultIntro}>
+          <span><Sparkles /></span>
+          <div>
+            <h1>Análisis Dermocosmético</h1>
+            <p>Resultados generados a partir del análisis inteligente de tu piel.</p>
+          </div>
+        </div>
+      )}
+
+      <div className={`${styles.workspace} ${hasResult ? styles.resultWorkspace : ''} ${!capturedImage && !isAnalyzing ? styles.initialWorkspace : ''}`}>
+        <section className={`${styles.captureColumn} ${hasResult ? styles.resultCapture : ''}`} aria-labelledby="capture-title">
+          <div className={styles.captureInner}>
+            <div className={styles.sectionHeading}>
               <div>
-                <h1 className="font-serif text-2xl tracking-wide text-[#1A1A1A]">Captura de Rostro</h1>
-                <p className="text-xs text-[#8E7E73] font-light">Posiciona tu rostro completo en el encuadre para un análisis óptimo</p>
+                <div className={styles.headingTitleRow}>
+                  {hasResult || (!capturedImage && !isAnalyzing)
+                    ? <h2 id="capture-title">Captura de rostro</h2>
+                    : <h1 id="capture-title">Captura de rostro</h1>}
+                  {hasResult && <span className={styles.successBadge}><CheckCircle2 /> Imagen analizada</span>}
+                </div>
+                <p>{hasResult ? 'Tu imagen ha sido capturada y analizada correctamente.' : 'Posiciona tu rostro completo en el encuadre para obtener un análisis preciso.'}</p>
               </div>
-              
-              {!isCameraActive && !capturedImage && (
-                <button
-                  onClick={startCamera}
-                  className="flex items-center gap-2 bg-[#1A1A1A] text-white px-5 py-2.5 rounded-full text-xs font-semibold hover:bg-[#8E7E73] transition-all duration-300"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  Activar Cámara
-                </button>
-              )}
             </div>
 
-            {/* Viewport Frame */}
-            <div className="relative aspect-[4/5] lg:aspect-[4/3] w-full rounded-3xl overflow-hidden bg-[#F5EFEB]/50 border border-[#8E7E73]/20 shadow-inner flex flex-col items-center justify-center">
-              
-              {/* Live Web Camera View */}
+            <div className={styles.viewport}>
               {isCameraActive && (
                 <>
                   <video
-                    ref={(el) => {
-                      videoRef.current = el;
-                      if (el && stream) {
-                        el.srcObject = stream;
-                      }
+                    ref={(element) => {
+                      videoRef.current = element;
+                      if (element && stream) element.srcObject = stream;
                     }}
-                    autoPlay
-                    playsInline
-                    muted
-                    className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
-                      isMirrored ? 'scale-x-[-1]' : ''
-                    }`}
+                    autoPlay playsInline muted
+                    className={`${styles.media} ${isMirrored ? styles.mirrored : ''}`}
                   />
-                  {/* Floating Toggle Mirror Button */}
-                  <button
-                    onClick={() => setIsMirrored(!isMirrored)}
-                    className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-md border border-[#8E7E73]/20 text-[#8E7E73] p-2.5 rounded-full hover:bg-white hover:text-[#1A1A1A] transition-all duration-300 shadow-md flex items-center justify-center group"
-                    title="Alternar Modo Espejo"
-                  >
-                    <FlipHorizontal className={`w-4 h-4 transition-transform duration-500 ${isMirrored ? 'rotate-180' : ''}`} />
+                  <button className={styles.mirrorButton} onClick={() => setIsMirrored(!isMirrored)} aria-label="Alternar imagen espejo">
+                    <FlipHorizontal />
                   </button>
+                  <div className={styles.faceGuide} aria-hidden="true">
+                    <span className={styles.guideVertical} />
+                    <span className={styles.guideEyes} />
+                    <span className={styles.guideShoulders} />
+                  </div>
+                  <div className={styles.guideMessage} aria-hidden="true">
+                    Centra tu rostro dentro de la guía
+                  </div>
                 </>
               )}
 
-              {/* Static Captured Image View with Overlay Masks */}
               {capturedImage && (
-                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
-                  <div className="relative w-full h-full">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={capturedImage}
-                      alt="Captured skincare target"
-                      className="w-full h-full object-cover"
-                    />
+                <div className={styles.imageStage}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={capturedImage} alt="Rostro capturado para el análisis" className={styles.media} />
+                  {results?.visualOverlay.map((overlay, index) => {
+                    const meta = getAnomalyMeta(overlay.type);
+                    return (
+                      <div
+                        key={`${overlay.type}-${index}`}
+                        className={`${styles.marker} ${meta.tone}`}
+                        style={{ left: `${(overlay.x / 640) * 100}%`, top: `${(overlay.y / 480) * 100}%` }}
+                        tabIndex={0}
+                        aria-label={`${meta.label}: ${overlay.label}`}
+                      >
+                        <span>{index + 1}</span>
+                        <div className={styles.markerTooltip}><strong>{meta.label}</strong> · {overlay.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-                    {/* Canvas Overlays (Percentage-based absolute pins for perfect responsiveness) */}
-                    {results && results.visualOverlay.map((overlay, index) => {
-                      const color = getColorClasses(overlay.type);
-                      // Map the 640x480 coordinate space to percentage values
-                      const leftPercent = (overlay.x / 640) * 100;
-                      const topPercent = (overlay.y / 480) * 100;
+              {!isCameraActive && !capturedImage && (
+                <div className={styles.placeholder}>
+                  <div className={styles.faceSilhouette} aria-hidden="true"><span /></div>
+                  <span className={styles.cameraOrb}><Camera /></span>
+                  <h2>Cámara inactiva</h2>
+                  <p>Activa tu cámara para el análisis dermocosmético o sube una fotografía desde tus archivos.</p>
+                  <div className={styles.captureHints} aria-label="Recomendaciones para la captura">
+                    <span><Check /> Luz frontal</span>
+                    <span><Check /> Rostro completo</span>
+                    <span><Check /> Sin filtros</span>
+                  </div>
+                  <div className={styles.primaryActions}>
+                    <button className={styles.primaryButton} onClick={startCamera}><Camera /> Usar cámara</button>
+                    <button className={styles.secondaryButton} onClick={() => fileInputRef.current?.click()}><Upload /> Subir foto</button>
+                  </div>
+                </div>
+              )}
 
+              {isAnalyzing && (
+                <div className={styles.loadingOverlay} role="status">
+                  <Loader2 className={styles.spinner} />
+                  <h2>Analizando tu piel…</h2>
+                  <p>La visión computacional está identificando patrones visibles.</p>
+                </div>
+              )}
+            </div>
+
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className={styles.hiddenInput} aria-label="Seleccionar fotografía" />
+
+            {!isCameraActive && !capturedImage && (
+              <div className={styles.formatNote}><Info /> Formatos de imagen compatibles con tu navegador</div>
+            )}
+
+            {isCameraActive && (
+              <div className={styles.belowActions}>
+                <button className={styles.primaryButton} onClick={capturePhoto}><Camera /> Tomar foto</button>
+                <button className={styles.secondaryButton} onClick={stopCamera}>Cancelar</button>
+              </div>
+            )}
+
+            {capturedImage && !isAnalyzing && (
+              <>
+                <div className={styles.belowActions}>
+                  <button className={styles.primaryButton} onClick={startCamera}><RefreshCw /> Nueva captura</button>
+                  <button className={styles.secondaryButton} onClick={() => fileInputRef.current?.click()}><Upload /> Subir otra</button>
+                </div>
+                <div className={styles.privacyNote}><LockKeyhole /> La imagen se utiliza para generar este análisis personalizado.</div>
+              </>
+            )}
+
+            {error && <div className={styles.error} role="alert">{error}</div>}
+          </div>
+        </section>
+
+        <aside className={`${styles.infoColumn} ${hasResult ? styles.resultInfo : ''}`} ref={resultsRef}>
+          {!capturedImage && !isAnalyzing && (
+            <div className={styles.introPanel}>
+              <div className={styles.introLead}>
+                <h2>Análisis inteligente</h2>
+                <p>Cuando captures tu rostro, la IA analizará patrones visibles de tu piel y preparará recomendaciones personalizadas.</p>
+              </div>
+              <DiagnosisProgress />
+              <div className={styles.introCards}>
+                <IntroCard icon={<Eye />} title="Qué analizará la IA">Acné, manchas, líneas finas y otras condiciones disponibles en el análisis.</IntroCard>
+                <IntroCard icon={<Lightbulb />} title="Consejos para la captura">Usa luz frontal, mantén el rostro completo, evita filtros y sombras fuertes.</IntroCard>
+                <IntroCard icon={<ShieldCheck />} title="Tu privacidad">La fotografía se utiliza dentro de este flujo para generar el resultado.</IntroCard>
+              </div>
+            </div>
+          )}
+
+          {isAnalyzing && (
+            <div className={styles.skeleton} aria-label="Preparando el informe">
+              <span /><span /><span /><div /><div /><div />
+            </div>
+          )}
+
+          {results && !isAnalyzing && (
+            <div className={styles.report}>
+              <div className={styles.reportHeader}>
+                <span className={styles.eyebrow}>Análisis dermocosmético</span>
+                <h2>Informe de tu piel</h2>
+                <div className={styles.chips}>
+                  {results.anomalies.map((anomaly) => {
+                    const meta = getAnomalyMeta(anomaly);
+                    return <span key={anomaly} className={`${styles.chip} ${meta.tone}`}>{meta.label}</span>;
+                  })}
+                </div>
+              </div>
+
+              <div className={styles.summaryCard}>
+                <span><Sparkles /></span>
+                <p>{results.recommendation}</p>
+              </div>
+
+              {results.anomalies.length > 0 && (
+                <section className={styles.reportSection}>
+                  <h3>Indicadores clave</h3>
+                  <div className={styles.indicators}>
+                    {results.anomalies.map((anomaly) => {
+                      const meta = getAnomalyMeta(anomaly);
+                      const IndicatorIcon = meta.icon;
+                      const detectedZones = results.visualOverlay.filter((overlay) => overlay.type === anomaly).length;
                       return (
-                        <div
-                          key={index}
-                          style={{ left: `${leftPercent}%`, top: `${topPercent}%` }}
-                          className="absolute -translate-x-1/2 -translate-y-1/2 group z-20 cursor-help"
-                        >
-                          {/* Pulsing ring */}
-                          <div className={`absolute -inset-2 rounded-full border-2 ${color.border} opacity-70 animate-ping`} />
-                          
-                          {/* Center point pin */}
-                          <div className={`w-5 h-5 rounded-full ${color.bg} border-2 border-white flex items-center justify-center shadow-lg`}>
-                            <span className="text-[8px] text-white font-bold">{index + 1}</span>
+                        <div className={`${styles.indicatorCard} ${meta.tone}`} key={anomaly}>
+                          <span className={`${styles.indicatorIcon} ${meta.tone}`}><IndicatorIcon /></span>
+                          <div className={styles.indicatorCopy}>
+                            <span>
+                              {detectedZones > 0
+                                ? `${detectedZones} ${detectedZones === 1 ? 'zona identificada' : 'zonas identificadas'}`
+                                : 'Condición identificada'}
+                            </span>
+                            <strong>{meta.label}</strong>
                           </div>
-
-                          {/* Hover tooltip label */}
-                          <div className="absolute left-6 top-1/2 -translate-y-1/2 scale-0 group-hover:scale-100 transition-all duration-300 origin-left bg-[#1A1A1A] text-white px-3 py-1.5 rounded-lg text-[10px] tracking-wider whitespace-nowrap shadow-xl z-50">
-                            <span className="font-bold">{color.label}:</span> {overlay.label}
-                          </div>
+                          <small className={`${styles.indicatorStatus} ${meta.tone}`}><Check /> Detectada</small>
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                </section>
               )}
 
-              {/* No Feed Placeholder / File Drag Drop Fallback */}
-              {!isCameraActive && !capturedImage && (
-                <div className="flex flex-col items-center gap-4 text-center p-8">
-                  <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center border border-[#8E7E73]/20 shadow-md">
-                    <Camera className="w-6 h-6 text-[#8E7E73]" />
-                  </div>
-                  <div>
-                    <h3 className="font-serif text-lg font-medium text-[#1A1A1A] mb-1">Cámara Inactiva</h3>
-                    <p className="text-xs text-[#8E7E73] max-w-sm font-light">
-                      Activa tu cámara en vivo para el análisis dermo-cosmético o sube una fotografía desde tus archivos.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                    <button
-                      onClick={startCamera}
-                      className="bg-[#1A1A1A] text-white px-6 py-3 rounded-full text-xs font-semibold hover:bg-[#8E7E73] transition-all duration-300"
-                    >
-                      Usar Cámara
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border border-[#8E7E73]/40 text-[#1A1A1A] bg-white px-6 py-3 rounded-full text-xs font-semibold hover:bg-[#F5EFEB]/20 transition-all duration-300 flex items-center gap-2"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-[#8E7E73]" />
-                      Subir Foto
-                    </button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Loading overlay during vision computation */}
-              {isAnalyzing && (
-                <div className="absolute inset-0 bg-[#FDFBF7]/90 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
-                  <Loader2 className="w-10 h-10 text-[#8E7E73] animate-spin" />
-                  <div className="text-center">
-                    <p className="font-serif text-lg text-[#1A1A1A] tracking-wider animate-pulse">Analizando la piel a nivel molecular...</p>
-                    <p className="text-[10px] text-[#8E7E73] tracking-widest uppercase mt-1">U-Net segmentando anomalías</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Error notifications */}
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 leading-relaxed font-light">
-                {error}
-              </div>
-            )}
-
-            {/* Live Camera Controls */}
-            {isCameraActive && (
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={capturePhoto}
-                  className="bg-[#1A1A1A] text-white px-8 py-3 rounded-full text-xs font-semibold hover:bg-[#8E7E73] transition-all duration-300 shadow-md flex items-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
-                  Tomar Foto
-                </button>
-                <button
-                  onClick={stopCamera}
-                  className="border border-[#8E7E73]/30 bg-white text-[#8E7E73] px-6 py-3 rounded-full text-xs hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-all duration-300"
-                >
-                  Cancelar
-                </button>
-              </div>
-            )}
-
-            {/* Post-Capture Controls */}
-            {capturedImage && !isAnalyzing && (
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={startCamera}
-                  className="bg-[#1A1A1A] text-white px-8 py-3.5 rounded-full text-xs font-semibold hover:bg-[#8E7E73] transition-all duration-300 flex items-center gap-2"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Nueva Captura
-                </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border border-[#8E7E73]/30 bg-white text-[#1A1A1A] px-6 py-3.5 rounded-full text-xs hover:border-[#1A1A1A] transition-all duration-300 flex items-center gap-2"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  Subir Otra
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel: Diagnosis reports and Neon db product catalog */}
-        <div
-          ref={resultsRef}
-          className={`lg:col-span-5 p-6 sm:p-8 bg-[#F5EFEB]/30 flex flex-col justify-start border-t lg:border-t-0 lg:h-full lg:overflow-y-auto ${
-            capturedImage || isAnalyzing ? 'flex' : 'hidden lg:flex'
-          }`}
-        >
-          
-          {/* STATE 1: Empty state, waiting for image capture */}
-          {!capturedImage && !isAnalyzing && (
-            <div className="h-full flex flex-col items-center justify-center text-center py-20 px-4">
-              <Beaker className="w-12 h-12 text-[#8E7E73]/30 mb-4" />
-              <h2 className="font-serif text-xl font-light text-[#1A1A1A] mb-2">Diagnóstico Pendiente</h2>
-              <p className="text-xs text-[#8E7E73] max-w-xs font-light leading-relaxed">
-                Toma una foto o sube un archivo para que nuestra API de visión y base de datos de Neon PostgreSQL generen tu receta dermo-cosmética personalizada.
-              </p>
             </div>
           )}
-
-          {/* STATE 2: Loading skeletons */}
-          {isAnalyzing && (
-            <div className="space-y-8 py-6">
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-[#8E7E73]/15 rounded w-1/3"></div>
-                <div className="h-8 bg-[#8E7E73]/15 rounded w-2/3"></div>
-                <div className="space-y-2 pt-2">
-                  <div className="h-3.5 bg-[#8E7E73]/15 rounded w-full"></div>
-                  <div className="h-3.5 bg-[#8E7E73]/15 rounded w-full"></div>
-                  <div className="h-3.5 bg-[#8E7E73]/15 rounded w-5/6"></div>
-                </div>
-              </div>
-
-              <div className="animate-pulse space-y-4 pt-6 border-t border-[#8E7E73]/10">
-                <div className="h-4 bg-[#8E7E73]/15 rounded w-1/2"></div>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="h-28 bg-[#8E7E73]/10 rounded-2xl"></div>
-                  <div className="h-28 bg-[#8E7E73]/10 rounded-2xl"></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STATE 3: Render results */}
-          {results && !isAnalyzing && (
-            <div className="space-y-8 py-2">
-              
-              {/* Doctor diagnosis report */}
-              <div>
-                <span className="text-[10px] tracking-widest text-[#8E7E73] uppercase font-semibold block mb-2">Análisis de Laboratorio</span>
-                <h2 className="font-serif text-3xl font-light text-[#1A1A1A] mb-4">Informe Dermatológico</h2>
-                
-                {/* Visual labels badge */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {results.anomalies.map((anom) => {
-                    const color = getColorClasses(anom);
-                    return (
-                      <span
-                        key={anom}
-                        className={`text-[10px] font-semibold tracking-widest uppercase px-3 py-1 rounded-full ${color.lightBg} ${color.text} border ${color.border}/30`}
-                      >
-                        {color.label}
-                      </span>
-                    );
-                  })}
-                </div>
-
-                <div className="bg-white border border-[#8E7E73]/15 rounded-3xl p-6 shadow-sm">
-                  <p className="text-xs text-[#1A1A1A] leading-relaxed font-light whitespace-pre-line">
-                    {results.recommendation}
-                  </p>
-                </div>
-              </div>
-
-              {/* Neon database products catalog */}
-              <div className="border-t border-[#8E7E73]/10 pt-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="font-serif text-xl font-light text-[#1A1A1A]">Fórmulas Recomendadas</h3>
-                    <p className="text-[10px] text-[#8E7E73] font-light">Directo desde nuestro catálogo en Neon PostgreSQL</p>
-                  </div>
-                  <span className="text-[9px] bg-[#8E7E73]/10 text-[#8E7E73] px-2 py-0.5 rounded font-mono">
-                    {results.products.length} {results.products.length === 1 ? 'fórmula' : 'fórmulas'}
-                  </span>
-                </div>
-
-                <div className="space-y-4">
-                  {results.products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="bg-white border border-[#8E7E73]/15 rounded-2xl p-4 flex gap-4 hover:border-[#8E7E73]/40 transition-all duration-300 group shadow-sm"
-                    >
-                      {/* Product Thumbnail */}
-                      <div className="relative w-20 h-20 bg-[#F5EFEB]/30 rounded-xl overflow-hidden p-2 flex items-center justify-center shrink-0 border border-[#8E7E73]/10">
-                        <Image
-                          src={product.imagenUrl}
-                          alt={product.nombre}
-                          width={60}
-                          height={60}
-                          className="object-contain transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </div>
-
-                      {/* Product copy details */}
-                      <div className="flex flex-col justify-between flex-grow">
-                        <div>
-                          <div className="flex justify-between items-start gap-2">
-                            <span className="text-[9px] text-[#8E7E73] tracking-widest uppercase">{product.marca}</span>
-                            <span className="text-xs font-semibold text-[#1A1A1A]">${product.precio.toFixed(2)}</span>
-                          </div>
-                          <h4 className="font-serif text-sm font-medium text-[#1A1A1A] leading-tight mt-0.5">{product.nombre}</h4>
-                          <p className="text-[10px] text-[#8E7E73] leading-relaxed font-light mt-1.5 line-clamp-2">
-                            {product.descripcion}
-                          </p>
-                        </div>
-
-                        {/* Connection points treated tags and Routine additions */}
-                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-[#8E7E73]/5">
-                          <div className="flex gap-1">
-                            {product.imperfecciones.map(imp => {
-                              const color = getColorClasses(imp);
-                              return (
-                                <span key={imp} className={`text-[8px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${color.lightBg} ${color.text}`}>
-                                  {imp === 'acne' ? 'Acné' : imp === 'manchas' ? 'Manchas' : 'Arrugas'}
-                                </span>
-                              );
-                            })}
-                          </div>
-                          
-                          <button
-                            onClick={() => toggleRoutineProduct(product.id)}
-                            className={`flex items-center gap-1 text-[10px] tracking-wider font-semibold transition-all duration-300 ${
-                              addedProducts[product.id]
-                                ? 'text-[#8E7E73] bg-[#F5EFEB] border border-[#8E7E73]/20 px-3 py-1.5 rounded-full'
-                                : 'text-white bg-[#1A1A1A] px-4 py-1.5 rounded-full hover:bg-[#8E7E73]'
-                            }`}
-                          >
-                            {addedProducts[product.id] ? (
-                              <>
-                                <Check className="w-3 h-3 text-[#8E7E73]" />
-                                Añadido
-                              </>
-                            ) : (
-                              'Añadir'
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        </aside>
       </div>
-    </div>
+
+      {hasResult && results && (
+        <section className={styles.productShelf} aria-labelledby="recommended-products-title">
+          <div className={styles.productShelfHeading}>
+            <div>
+              <h2 id="recommended-products-title">Fórmulas recomendadas para tu piel</h2>
+              <p>Seleccionadas según las condiciones identificadas en el análisis.</p>
+            </div>
+            <span>{results.products.length} {results.products.length === 1 ? 'fórmula recomendada' : 'fórmulas recomendadas'}</span>
+          </div>
+          <div className={styles.productGrid}>
+            {results.products.map((product) => (
+              <article className={styles.shelfProductCard} key={product.id}>
+                <div className={styles.shelfProductImage}>
+                  <Image src={product.imagenUrl} alt={product.nombre} width={130} height={150} />
+                </div>
+                <div className={styles.productCopy}>
+                  <span>{product.marca}</span>
+                  <h3>{product.nombre}</h3>
+                  <p>{product.descripcion}</p>
+                  <div className={styles.productTags}>
+                    {product.imperfecciones.map((item) => <span key={item}>{getAnomalyMeta(item).label}</span>)}
+                  </div>
+                  <strong className={styles.shelfPrice}>${product.precio.toFixed(2)}</strong>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+    </main>
   );
 }

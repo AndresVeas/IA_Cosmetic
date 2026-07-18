@@ -154,6 +154,40 @@ def analyze_skin(payload: AnalysisRequest):
                 anomalies_detected.add(class_name)
                 del item["size"]  # Eliminar clave temporal de ordenamiento
                 visual_overlay.append(item)
+
+        # Si no se detectó nada con los umbrales normales (por ejemplo, por mala iluminación),
+        # ejecutamos un escaneo con ultra-sensibilidad para detectar imperfecciones sutiles.
+        if len(anomalies_detected) == 0:
+            print("[DEBUG] No se detectaron anomalías con los umbrales estándar. Ejecutando escaneo ultra-sensible...")
+            sensitive_thresholds = {1: 0.04, 2: 0.04, 3: 0.06}
+            for class_id, class_name in classes_map.items():
+                prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
+                mask = (prob_scaled > sensitive_thresholds[class_id]).astype(np.uint8)
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                
+                class_overlays = []
+                for i, cnt in enumerate(contours):
+                    area = cv2.contourArea(cnt)
+                    if area < 8:  # Área mínima más pequeña para detectar pequeños detalles
+                        continue
+                    
+                    (circle_x, circle_y), radius = cv2.minEnclosingCircle(cnt)
+                    cx, cy = int(circle_x), int(circle_y)
+                    
+                    class_overlays.append({
+                        "type": class_name,
+                        "x": cx,
+                        "y": cy,
+                        "radius": max(5, int(radius)),
+                        "label": f"{labels_map[class_id]} (Sensible)",
+                        "size": int(area)
+                    })
+                
+                class_overlays.sort(key=lambda item: item["size"], reverse=True)
+                for item in class_overlays[:2]:
+                    anomalies_detected.add(class_name)
+                    del item["size"]
+                    visual_overlay.append(item)
                 
         return {
             "anomalies": list(anomalies_detected),
