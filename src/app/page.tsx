@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, Sparkles, Check, ArrowRight, Cpu, Shield, Award, Sparkle } from "lucide-react";
+import { Camera, Sparkles, Check, Cpu, Sparkle } from "lucide-react";
 import Logo from "@/components/Logo";
 
 export default function Home() {
@@ -71,13 +71,17 @@ export default function Home() {
             DIAGNÓSTICO DERMO-COSMÉTICO CON IA
           </div>
 
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-light tracking-wide text-brand-plum leading-[1.15] mb-6">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-[-0.04em] text-brand-plum leading-[1.05] mb-6">
             Conoce tu piel.<br />
             Transforma tu rutina.<br />
-            <span className="italic font-normal text-brand-dusty-rose">Con ciencia e inteligencia.</span>
+            <span className="font-bold text-brand-dusty-rose">Con ciencia e inteligencia.</span>
           </h1>
 
+<<<<<<< HEAD
           <p className="text-base md:text-lg text-brand-plum/90 font-normal leading-relaxed mb-10 max-w-xl">
+=======
+          <p className="text-base md:text-lg text-brand-plum/80 font-normal leading-relaxed mb-10 max-w-xl">
+>>>>>>> origin/Camila
             IA_COSMETIC fusiona visión computacional U-Net con formulación boutique para ofrecerte un diagnóstico profundo y recomendaciones personalizadas en tiempo real de forma científica.
           </p>
 
@@ -103,15 +107,16 @@ export default function Home() {
           <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden border border-brand-dusty-rose/30 shadow-2xl bg-brand-rose/10">
             {/* The generated high-end model face image */}
             <Image
-              src="/hero-skin.png"
-              alt="Análisis Dermo-Cosmético de Piel"
+              src="/hero-skin-natural.png"
+              alt="Retrato con piel natural y textura visible"
               fill
               className="object-cover"
               priority
             />
-            {/* U-Net Grid Overlay Mask */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/30 to-brand-rose/30 mix-blend-multiply" />
+            {/* Subtle color integration */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/10 to-brand-rose/10 mix-blend-multiply" />
             
+<<<<<<< HEAD
             {/* Futuristic Animated SVG Wireframe Layer */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-80" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
               {/* Outer boundary contour loop delimiting the face scan zone */}
@@ -146,6 +151,53 @@ export default function Home() {
 
               {/* Horizontal scanning light bar */}
               <line x1="0" y1="180" x2="400" y2="180" stroke="#581E2E" strokeWidth="1" opacity="0.3" className="animate-bounce" style={{ animationDuration: '7s' }} />
+=======
+            {/* Minimal animated skin-analysis layer */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-75" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <clipPath id="heroFaceClip"><ellipse cx="205" cy="226" rx="116" ry="160" /></clipPath>
+                <linearGradient id="heroScanBeam" x1="85" y1="0" x2="325" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#F7F4F1" stopOpacity="0" />
+                  <stop offset="0.18" stopColor="#F7F4F1" stopOpacity="0.85" />
+                  <stop offset="0.5" stopColor="#DCC0C6" />
+                  <stop offset="0.82" stopColor="#F7F4F1" stopOpacity="0.85" />
+                  <stop offset="1" stopColor="#F7F4F1" stopOpacity="0" />
+                </linearGradient>
+                <filter id="heroScanGlow" x="-20%" y="-300%" width="140%" height="700%">
+                  <feGaussianBlur stdDeviation="4" />
+                </filter>
+              </defs>
+
+              <ellipse cx="205" cy="226" rx="116" ry="160" stroke="#F7F4F1" strokeWidth="1" strokeDasharray="5 7" opacity="0.52" />
+
+              <g stroke="#581E2E" strokeWidth="0.8" opacity="0.42">
+                <path d="M200 112 L146 190 L205 238 L252 188 L200 112" />
+                <path d="M146 190 L126 244 L205 238 L274 240 L252 188" />
+                <path d="M126 244 L174 282 L205 238 L235 281 L274 240" />
+                <path d="M174 282 L207 324 L235 281" />
+                <path d="M146 190 L252 188 M174 282 L235 281" strokeDasharray="3 5" />
+              </g>
+
+              {[
+                [200, 112, '0s'], [146, 190, '.35s'], [252, 188, '.7s'],
+                [205, 238, '1.05s'], [126, 244, '1.4s'], [274, 240, '1.75s'],
+                [174, 282, '2.1s'], [235, 281, '2.45s'], [207, 324, '2.8s'],
+              ].map(([cx, cy, delay], index) => (
+                <g key={index} className="animate-pulse" style={{ animationDelay: String(delay), animationDuration: '2.8s' }}>
+                  <circle cx={Number(cx)} cy={Number(cy)} r="5" fill="#F7F4F1" fillOpacity="0.82" />
+                  <circle cx={Number(cx)} cy={Number(cy)} r="2.6" fill="#581E2E" />
+                </g>
+              ))}
+
+              <g clipPath="url(#heroFaceClip)">
+                <rect x="82" y="96" width="246" height="10" fill="url(#heroScanBeam)" opacity="0.28" filter="url(#heroScanGlow)">
+                  <animate attributeName="y" values="96;348;96" dur="6s" repeatCount="indefinite" />
+                </rect>
+                <rect x="82" y="100" width="246" height="2" fill="url(#heroScanBeam)">
+                  <animate attributeName="y" values="100;352;100" dur="6s" repeatCount="indefinite" />
+                </rect>
+              </g>
+>>>>>>> origin/Camila
             </svg>
 
           </div>
@@ -160,8 +212,13 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Camera className="w-5 h-5" />
               </div>
+<<<<<<< HEAD
               <h3 className="font-serif text-xl font-medium mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
               <p className="text-lg text-brand-plum/90 font-normal leading-relaxed">
+=======
+              <h3 className="font-sans text-lg font-bold mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
+              <p className="text-sm text-brand-plum/70 font-normal leading-relaxed">
+>>>>>>> origin/Camila
                 Escaneo instantáneo de imperfecciones para evaluar acné, manchas de sol, líneas de expresión e hiperpigmentación con alta precisión.
               </p>
               <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
@@ -173,9 +230,15 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-rose/40 flex items-center justify-center text-brand-plum mb-6">
                 <Cpu className="w-5 h-5" />
               </div>
+<<<<<<< HEAD
               <h3 className="font-serif text-xl font-medium mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
               <p className="text-lg text-brand-plum/90 font-normal leading-relaxed">
                 Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance cellular de tu rostro.
+=======
+              <h3 className="font-sans text-lg font-bold mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
+              <p className="text-sm text-brand-plum/70 font-normal leading-relaxed">
+                Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance celular de tu rostro.
+>>>>>>> origin/Camila
               </p>
               <a href="#productos" className="inline-flex items-center gap-1.5 text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
                 Conocer más &rarr;
@@ -186,8 +249,13 @@ export default function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Sparkle className="w-5 h-5" />
               </div>
+<<<<<<< HEAD
               <h3 className="font-serif text-xl font-medium mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
               <p className="text-lg text-brand-plum/90 font-normal leading-relaxed">
+=======
+              <h3 className="font-sans text-lg font-bold mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
+              <p className="text-sm text-brand-plum/70 font-normal leading-relaxed">
+>>>>>>> origin/Camila
                 Rutinas y combinaciones personalizadas basadas en tu análisis biométrico, conectadas de forma dinámica a nuestro catálogo inteligente.
               </p>
               <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
@@ -202,8 +270,13 @@ export default function Home() {
       <section className="bg-brand-lavender py-20 px-6 sm:px-12 border-b border-brand-dusty-rose/10">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
           <div className="lg:max-w-md">
+<<<<<<< HEAD
             <span className="text-sm tracking-widest text-brand-plum uppercase font-bold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
             <h2 className="font-serif text-4xl sm:text-5xl text-brand-plum font-light leading-snug">
+=======
+            <span className="text-xs tracking-widest text-brand-plum uppercase font-bold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
+            <h2 className="font-display text-3xl sm:text-4xl text-brand-plum font-bold leading-tight tracking-[-0.03em]">
+>>>>>>> origin/Camila
               Beneficios que se ven, ciencia que se siente.
             </h2>
           </div>
@@ -213,8 +286,13 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
+<<<<<<< HEAD
                 <h4 className="font-serif text-2xl font-semibold text-brand-plum">Diagnóstico preciso</h4>
                 <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
+=======
+                <h4 className="font-sans text-lg font-bold text-brand-plum">Diagnóstico preciso</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
+>>>>>>> origin/Camila
               </div>
             </div>
             <div className="flex gap-4">
@@ -222,8 +300,13 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
+<<<<<<< HEAD
                 <h4 className="font-serif text-2xl font-semibold text-brand-plum">Personalización real</h4>
                 <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
+=======
+                <h4 className="font-sans text-lg font-bold text-brand-plum">Personalización real</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
+>>>>>>> origin/Camila
               </div>
             </div>
             <div className="flex gap-4">
@@ -231,8 +314,13 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
+<<<<<<< HEAD
                 <h4 className="font-serif text-2xl font-semibold text-brand-plum">Resultados visibles</h4>
                 <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
+=======
+                <h4 className="font-sans text-lg font-bold text-brand-plum">Resultados visibles</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
+>>>>>>> origin/Camila
               </div>
             </div>
             <div className="flex gap-4">
@@ -240,8 +328,13 @@ export default function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
+<<<<<<< HEAD
                 <h4 className="font-serif text-2xl font-semibold text-brand-plum">Seguridad & transparencia</h4>
                 <p className="text-lg text-brand-plum/90 leading-relaxed font-normal mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
+=======
+                <h4 className="font-sans text-lg font-bold text-brand-plum">Seguridad & transparencia</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-normal mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
+>>>>>>> origin/Camila
               </div>
             </div>
           </div>
@@ -252,8 +345,13 @@ export default function Home() {
       <section id="productos" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto w-full">
         <div className="flex justify-between items-end mb-12">
           <div>
+<<<<<<< HEAD
             <span className="text-xs tracking-widest text-brand-plum/70 uppercase block mb-3 font-bold">FÓRMULAS DESTACADAS</span>
             <h2 className="font-serif text-3xl sm:text-4xl font-light tracking-wide text-brand-plum">
+=======
+            <span className="text-[10px] tracking-widest text-brand-plum/70 uppercase block mb-3 font-bold">FÓRMULAS DESTACADAS</span>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-brand-plum">
+>>>>>>> origin/Camila
               Selección IA_Cosmetic
             </h2>
           </div>
@@ -286,10 +384,15 @@ export default function Home() {
               </div>
               <div className="p-6 flex flex-col flex-1">
                 <span className="text-[10px] text-brand-dusty-rose tracking-widest uppercase mb-1 font-semibold">{product.type}</span>
+<<<<<<< HEAD
                 <h3 className="font-serif text-xl font-semibold text-brand-plum mb-2 leading-snug">{product.name}</h3>
                 <p className="text-lg text-brand-plum/90 font-normal leading-relaxed mb-6 flex-1">{product.description}</p>
+=======
+                <h3 className="font-sans text-base font-bold text-brand-plum mb-2 leading-snug">{product.name}</h3>
+                <p className="text-sm text-brand-plum/70 font-normal leading-relaxed mb-6 flex-1">{product.description}</p>
+>>>>>>> origin/Camila
                 <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
-                  <span className="font-semibold text-sm text-brand-plum">{product.price}</span>
+                  <span className="font-metric font-bold text-sm text-brand-plum">{product.price}</span>
                   <Link 
                     href="/diagnostico" 
                     className="text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"
@@ -309,7 +412,7 @@ export default function Home() {
       <footer className="border-t border-brand-dusty-rose/20 bg-brand-sand/10 py-12 px-6 sm:px-12 text-brand-plum/80 text-xs tracking-widest mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <Logo />
-          <p className="text-[10px] text-center md:text-right font-light">
+          <p className="text-[10px] text-center md:text-right font-normal">
             &copy; {new Date().getFullYear()} IA_COSMETIC. TODOS LOS DERECHOS RESERVADOS. CIENCIA Y BELLEZA.
           </p>
         </div>

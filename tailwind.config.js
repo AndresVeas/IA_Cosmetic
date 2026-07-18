@@ -16,8 +16,11 @@ module.exports = {
         }
       },
       fontFamily: {
-        serif: ['var(--font-serif)', 'serif'],
-        sans: ['var(--font-sans)', 'sans-serif'],
+        serif: ['var(--font-display)'],
+        display: ['var(--font-display)'],
+        sans: ['var(--font-body)'],
+        ui: ['var(--font-ui)'],
+        metric: ['var(--font-metric)'],
       }
     },
   },

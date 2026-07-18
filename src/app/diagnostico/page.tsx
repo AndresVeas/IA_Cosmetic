@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+import type { LucideIcon } from 'lucide-react';
 import {
   ArrowLeft,
   Camera,
   Check,
   CheckCircle2,
+  CircleDot,
   Eye,
   FlipHorizontal,
   Info,
@@ -19,7 +21,9 @@ import {
   ScanFace,
   ShieldCheck,
   Sparkles,
+  SunMedium,
   Upload,
+  Waves,
 } from 'lucide-react';
 import styles from './diagnostico.module.css';
 
@@ -48,14 +52,14 @@ interface AnalysisResponse {
   products: Product[];
 }
 
-const anomalyMeta: Record<string, { label: string; tone: string }> = {
-  acne: { label: 'Acné', tone: styles.acne },
-  manchas: { label: 'Hiperpigmentación', tone: styles.spots },
-  arrugas: { label: 'Líneas / arrugas', tone: styles.lines },
+const anomalyMeta: Record<string, { label: string; tone: string; icon: LucideIcon }> = {
+  acne: { label: 'Acné', tone: styles.acne, icon: CircleDot },
+  manchas: { label: 'Hiperpigmentación', tone: styles.spots, icon: SunMedium },
+  arrugas: { label: 'Líneas / arrugas', tone: styles.lines, icon: Waves },
 };
 
 function getAnomalyMeta(type: string) {
-  return anomalyMeta[type] ?? { label: 'Otra condición', tone: styles.other };
+  return anomalyMeta[type] ?? { label: 'Otra condición', tone: styles.other, icon: ScanFace };
 }
 
 function DiagnosisProgress({ analyzed = false }: { analyzed?: boolean }) {
@@ -96,7 +100,6 @@ export default function DiagnosticoPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [addedProducts, setAddedProducts] = useState<Record<string, boolean>>({});
   const [isMirrored, setIsMirrored] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -219,15 +222,39 @@ export default function DiagnosticoPage() {
         <span className={styles.visionBadge}><Sparkles /> U-Net Vision 1.0</span>
       </header>
 
-      <div className={styles.workspace}>
-        <section className={styles.captureColumn} aria-labelledby="capture-title">
+      {!capturedImage && !isAnalyzing && (
+        <div className={styles.initialIntro}>
+          <span><Sparkles /></span>
+          <div>
+            <h1>Tu análisis comenzará aquí</h1>
+            <p>Captura tu rostro para obtener un análisis inteligente y recomendaciones personalizadas.</p>
+          </div>
+        </div>
+      )}
+
+      {hasResult && (
+        <div className={styles.resultIntro}>
+          <span><Sparkles /></span>
+          <div>
+            <h1>Análisis Dermocosmético</h1>
+            <p>Resultados generados a partir del análisis inteligente de tu piel.</p>
+          </div>
+        </div>
+      )}
+
+      <div className={`${styles.workspace} ${hasResult ? styles.resultWorkspace : ''} ${!capturedImage && !isAnalyzing ? styles.initialWorkspace : ''}`}>
+        <section className={`${styles.captureColumn} ${hasResult ? styles.resultCapture : ''}`} aria-labelledby="capture-title">
           <div className={styles.captureInner}>
             <div className={styles.sectionHeading}>
               <div>
-                <h1 id="capture-title">Captura de rostro</h1>
+                <div className={styles.headingTitleRow}>
+                  {hasResult || (!capturedImage && !isAnalyzing)
+                    ? <h2 id="capture-title">Captura de rostro</h2>
+                    : <h1 id="capture-title">Captura de rostro</h1>}
+                  {hasResult && <span className={styles.successBadge}><CheckCircle2 /> Imagen analizada</span>}
+                </div>
                 <p>{hasResult ? 'Tu imagen ha sido capturada y analizada correctamente.' : 'Posiciona tu rostro completo en el encuadre para obtener un análisis preciso.'}</p>
               </div>
-              {hasResult && <span className={styles.successBadge}><CheckCircle2 /> Imagen analizada</span>}
             </div>
 
             <div className={styles.viewport}>
@@ -283,6 +310,11 @@ export default function DiagnosticoPage() {
                   <span className={styles.cameraOrb}><Camera /></span>
                   <h2>Cámara inactiva</h2>
                   <p>Activa tu cámara para el análisis dermocosmético o sube una fotografía desde tus archivos.</p>
+                  <div className={styles.captureHints} aria-label="Recomendaciones para la captura">
+                    <span><Check /> Luz frontal</span>
+                    <span><Check /> Rostro completo</span>
+                    <span><Check /> Sin filtros</span>
+                  </div>
                   <div className={styles.primaryActions}>
                     <button className={styles.primaryButton} onClick={startCamera}><Camera /> Usar cámara</button>
                     <button className={styles.secondaryButton} onClick={() => fileInputRef.current?.click()}><Upload /> Subir foto</button>
@@ -326,20 +358,19 @@ export default function DiagnosticoPage() {
           </div>
         </section>
 
-        <aside className={styles.infoColumn} ref={resultsRef}>
+        <aside className={`${styles.infoColumn} ${hasResult ? styles.resultInfo : ''}`} ref={resultsRef}>
           {!capturedImage && !isAnalyzing && (
             <div className={styles.introPanel}>
               <div className={styles.introLead}>
-                <span><Sparkles /></span>
-                <h2>Tu análisis comenzará aquí</h2>
+                <h2>Análisis inteligente</h2>
                 <p>Cuando captures tu rostro, la IA analizará patrones visibles de tu piel y preparará recomendaciones personalizadas.</p>
               </div>
+              <DiagnosisProgress />
               <div className={styles.introCards}>
                 <IntroCard icon={<Eye />} title="Qué analizará la IA">Acné, manchas, líneas finas y otras condiciones disponibles en el análisis.</IntroCard>
                 <IntroCard icon={<Lightbulb />} title="Consejos para la captura">Usa luz frontal, mantén el rostro completo, evita filtros y sombras fuertes.</IntroCard>
                 <IntroCard icon={<ShieldCheck />} title="Tu privacidad">La fotografía se utiliza dentro de este flujo para generar el resultado.</IntroCard>
               </div>
-              <DiagnosisProgress />
             </div>
           )}
 
@@ -373,10 +404,20 @@ export default function DiagnosticoPage() {
                   <div className={styles.indicators}>
                     {results.anomalies.map((anomaly) => {
                       const meta = getAnomalyMeta(anomaly);
+                      const IndicatorIcon = meta.icon;
+                      const detectedZones = results.visualOverlay.filter((overlay) => overlay.type === anomaly).length;
                       return (
-                        <div className={styles.indicatorCard} key={anomaly}>
-                          <span className={`${styles.indicatorIcon} ${meta.tone}`}><ScanFace /></span>
-                          <div><strong>{meta.label}</strong><small><i className={meta.tone} /> Detectada en el análisis</small></div>
+                        <div className={`${styles.indicatorCard} ${meta.tone}`} key={anomaly}>
+                          <span className={`${styles.indicatorIcon} ${meta.tone}`}><IndicatorIcon /></span>
+                          <div className={styles.indicatorCopy}>
+                            <span>
+                              {detectedZones > 0
+                                ? `${detectedZones} ${detectedZones === 1 ? 'zona identificada' : 'zonas identificadas'}`
+                                : 'Condición identificada'}
+                            </span>
+                            <strong>{meta.label}</strong>
+                          </div>
+                          <small className={`${styles.indicatorStatus} ${meta.tone}`}><Check /> Detectada</small>
                         </div>
                       );
                     })}
@@ -384,41 +425,40 @@ export default function DiagnosticoPage() {
                 </section>
               )}
 
-              <section className={styles.reportSection}>
-                <div className={styles.sectionRow}>
-                  <h3>Fórmulas recomendadas</h3>
-                  <span>{results.products.length} {results.products.length === 1 ? 'fórmula' : 'fórmulas'}</span>
-                </div>
-                <div className={styles.products}>
-                  {results.products.map((product) => (
-                    <article className={styles.productCard} key={product.id}>
-                      <div className={styles.productImage}>
-                        <Image src={product.imagenUrl} alt={product.nombre} width={76} height={76} />
-                      </div>
-                      <div className={styles.productCopy}>
-                        <span>{product.marca}</span>
-                        <h4>{product.nombre}</h4>
-                        <p>{product.descripcion}</p>
-                        <div className={styles.productTags}>
-                          {product.imperfecciones.map((item) => <span key={item}>{getAnomalyMeta(item).label}</span>)}
-                        </div>
-                      </div>
-                      <div className={styles.productAction}>
-                        <strong>${product.precio.toFixed(2)}</strong>
-                        <button onClick={() => setAddedProducts((current) => ({ ...current, [product.id]: !current[product.id] }))}>
-                          {addedProducts[product.id] ? <><Check /> Añadido</> : 'Añadir'}
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <DiagnosisProgress analyzed />
             </div>
           )}
         </aside>
       </div>
+
+      {hasResult && results && (
+        <section className={styles.productShelf} aria-labelledby="recommended-products-title">
+          <div className={styles.productShelfHeading}>
+            <div>
+              <h2 id="recommended-products-title">Fórmulas recomendadas para tu piel</h2>
+              <p>Seleccionadas según las condiciones identificadas en el análisis.</p>
+            </div>
+            <span>{results.products.length} {results.products.length === 1 ? 'fórmula recomendada' : 'fórmulas recomendadas'}</span>
+          </div>
+          <div className={styles.productGrid}>
+            {results.products.map((product) => (
+              <article className={styles.shelfProductCard} key={product.id}>
+                <div className={styles.shelfProductImage}>
+                  <Image src={product.imagenUrl} alt={product.nombre} width={130} height={150} />
+                </div>
+                <div className={styles.productCopy}>
+                  <span>{product.marca}</span>
+                  <h3>{product.nombre}</h3>
+                  <p>{product.descripcion}</p>
+                  <div className={styles.productTags}>
+                    {product.imperfecciones.map((item) => <span key={item}>{getAnomalyMeta(item).label}</span>)}
+                  </div>
+                  <strong className={styles.shelfPrice}>${product.precio.toFixed(2)}</strong>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

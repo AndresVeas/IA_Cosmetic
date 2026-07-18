@@ -35,6 +35,7 @@ export function LogoIcon({ className = 'h-12 w-12' }: { className?: string }) {
   );
 }
 
+<<<<<<< HEAD
 export default function Logo({ showTagline = false, className = '', alignment = 'horizontal' }: LogoProps) {
   const isVertical = alignment === 'vertical';
 
@@ -52,6 +53,41 @@ export default function Logo({ showTagline = false, className = '', alignment = 
           >
             Cosmetic
           </span>
+=======
+export default function Logo({ showTagline = false, className = "", alignment = "horizontal" }: { showTagline?: boolean, className?: string, alignment?: "horizontal" | "vertical" }) {
+  if (alignment === "vertical") {
+    return (
+      <div className={`flex flex-col items-center text-center gap-3 shrink-0 ${className}`}>
+        <LogoIcon className="w-20 h-20 text-brand-plum flex-shrink-0" />
+        <div className="flex flex-col items-center">
+          <div className="font-display text-2xl tracking-[0.08em] font-bold leading-none flex items-center gap-1.5">
+            <span className="text-brand-plum font-bold">IA</span>
+            <span className="text-brand-accent font-semibold tracking-[0.1em] ml-1">COSMETIC</span>
+          </div>
+          {/* Elegant star divider from user image */}
+          <div className="flex items-center justify-center w-36 my-3 gap-2">
+            <div className="h-[0.5px] bg-brand-dusty-rose/35 flex-1"></div>
+            <span className="text-brand-accent text-xs">✦</span>
+            <div className="h-[0.5px] bg-brand-dusty-rose/35 flex-1"></div>
+          </div>
+          {showTagline && (
+            <span className="text-[8px] tracking-[0.25em] uppercase font-sans text-brand-plum/80 font-bold">
+              CIENCIA INTELIGENTE PARA TU PIEL
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex items-center gap-2 shrink-0 ${className}`}>
+      <LogoIcon className="w-12 h-12 text-brand-plum flex-shrink-0" />
+      <div className="flex flex-col justify-center">
+        <div className="font-display text-lg tracking-[0.07em] font-bold leading-none flex items-center">
+          <span className="text-brand-plum font-bold">IA</span>
+          <span className="text-brand-accent font-semibold tracking-[0.09em] ml-2">COSMETIC</span>
+>>>>>>> origin/Camila
         </div>
         {showTagline && (
           <span className="mt-1.5 text-[7px] font-semibold uppercase tracking-[0.24em] text-[#8C3D60]/70">
