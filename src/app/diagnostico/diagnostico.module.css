@@ -244,3 +244,42 @@
 @media (prefers-reduced-motion: reduce) {
   .page *, .page *::before, .page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.maskToggleButton {
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--plum);
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.maskToggleButton:hover {
+  background: white;
+  transform: translateY(-2px);
+}
+
+.maskToggleButtonActive {
+  color: white !important;
+  background: var(--mauve) !important;
+  border-color: var(--mauve) !important;
+  box-shadow: 0 4px 12px rgb(169 104 166 / 35%);
+}
+
+.maskToggleButtonActive:hover {
+  background: var(--plum) !important;
+  border-color: var(--plum) !important;
+}
+
+.maskToggleButton svg {
+  width: 18px;
+  height: 18px;
+}

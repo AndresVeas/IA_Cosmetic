@@ -189,9 +189,33 @@ def analyze_skin(payload: AnalysisRequest):
                     del item["size"]
                     visual_overlay.append(item)
                 
+        # 5. Generar la máscara de segmentación UNET en formato RGBA (base64)
+        active_thresholds = thresholds if len(anomalies_detected) > 0 else {1: 0.04, 2: 0.04, 3: 0.06}
+        overlay_mask = np.zeros((480, 640, 4), dtype=np.uint8)
+        
+        # Colores RGBA en formato BGRA para OpenCV:
+        # Acné: Rojo (#e76f73) -> rgb(231, 111, 115) -> [115, 111, 231, 140]
+        # Manchas: Verde (#48a783) -> rgb(72, 167, 131) -> [131, 167, 72, 140]
+        # Arrugas: Morado/Líneas (#8975e8) -> rgb(137, 117, 232) -> [232, 117, 137, 140]
+        color_map = {
+            1: [115, 111, 231, 140],  # acne
+            2: [131, 167, 72, 140],   # manchas
+            3: [232, 117, 137, 140]   # arrugas
+        }
+        
+        for class_id, color in color_map.items():
+            prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
+            mask_indices = prob_scaled > active_thresholds[class_id]
+            overlay_mask[mask_indices] = color
+            
+        _, encoded_img = cv2.imencode(".png", overlay_mask)
+        mask_base64 = base64.b64encode(encoded_img).decode("utf-8")
+        mask_image_url = f"data:image/png;base64,{mask_base64}"
+
         return {
             "anomalies": list(anomalies_detected),
-            "visualOverlay": visual_overlay
+            "visualOverlay": visual_overlay,
+            "maskImage": mask_image_url
         }
         
     except Exception as e:

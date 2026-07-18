@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   CircleDot,
   Eye,
+  EyeOff,
   FlipHorizontal,
   Info,
   Lightbulb,
@@ -50,6 +51,7 @@ interface AnalysisResponse {
   visualOverlay: VisualOverlay[];
   recommendation: string;
   products: Product[];
+  maskImage?: string;
 }
 
 const anomalyMeta: Record<string, { label: string; tone: string; icon: LucideIcon }> = {
@@ -101,6 +103,7 @@ export default function DiagnosticoPage() {
   const [results, setResults] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMirrored, setIsMirrored] = useState(true);
+  const [showMask, setShowMask] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -111,6 +114,7 @@ export default function DiagnosticoPage() {
       setError(null);
       setCapturedImage(null);
       setResults(null);
+      setShowMask(false);
 
       let mediaStream: MediaStream;
       try {
@@ -153,6 +157,7 @@ export default function DiagnosticoPage() {
     setIsAnalyzing(true);
     setResults(null);
     setError(null);
+    setShowMask(false);
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -286,13 +291,24 @@ export default function DiagnosticoPage() {
                 <div className={styles.imageStage}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={capturedImage} alt="Rostro capturado para el análisis" className={styles.media} />
+                  
+                  {showMask && results?.maskImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={results.maskImage}
+                      alt="Máscara de segmentación UNET"
+                      className={styles.media}
+                      style={{ mixBlendMode: 'normal', opacity: 0.8, zIndex: 3 }}
+                    />
+                  )}
+
                   {results?.visualOverlay.map((overlay, index) => {
                     const meta = getAnomalyMeta(overlay.type);
                     return (
                       <div
                         key={`${overlay.type}-${index}`}
                         className={`${styles.marker} ${meta.tone}`}
-                        style={{ left: `${(overlay.x / 640) * 100}%`, top: `${(overlay.y / 480) * 100}%` }}
+                        style={{ left: `${(overlay.x / 640) * 100}%`, top: `${(overlay.y / 480) * 100}%`, zIndex: 4 }}
                         tabIndex={0}
                         aria-label={`${meta.label}: ${overlay.label}`}
                       >
@@ -301,6 +317,17 @@ export default function DiagnosticoPage() {
                       </div>
                     );
                   })}
+
+                  {results && results.maskImage && (
+                    <button
+                      className={`${styles.maskToggleButton} ${showMask ? styles.maskToggleButtonActive : ''}`}
+                      onClick={() => setShowMask(!showMask)}
+                      aria-label="Alternar máscara de segmentación"
+                      title={showMask ? "Ocultar máscara U-Net" : "Mostrar máscara U-Net"}
+                    >
+                      {showMask ? <EyeOff /> : <Eye />}
+                    </button>
+                  )}
                 </div>
               )}
 

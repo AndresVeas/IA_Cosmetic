@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
 
     let anomaliesArray: string[] = [];
     let visualOverlay: any[] = [];
+    let maskImage: string | null = null;
     let isRealInference = false;
 
     // Intentar consultar el servidor de FastAPI (Python)
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
         const mlResults = await apiResponse.json();
         anomaliesArray = mlResults.anomalies;
         visualOverlay = mlResults.visualOverlay;
+        maskImage = mlResults.maskImage || null;
         isRealInference = true;
         console.log('Inferencia real completada por FastAPI. Detectado:', anomaliesArray);
       } else {
@@ -77,6 +79,16 @@ export async function POST(req: NextRequest) {
           );
         }
       });
+      // Crear una máscara SVG simulada para el fallback
+      let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480">`;
+      visualOverlay.forEach((overlay) => {
+        let color = '#e76f73'; // acne
+        if (overlay.type === 'manchas') color = '#48a783';
+        if (overlay.type === 'arrugas') color = '#8975e8';
+        svgContent += `<circle cx="${overlay.x}" cy="${overlay.y}" r="${overlay.radius * 2}" fill="${color}" fill-opacity="0.55" />`;
+      });
+      svgContent += `</svg>`;
+      maskImage = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
     }
 
     // Generar narrativa de recomendaciones según las anomalías
@@ -95,7 +107,8 @@ export async function POST(req: NextRequest) {
       anomalies: anomaliesArray,
       visualOverlay,
       recommendation: recommendationText,
-      products: sortedProducts
+      products: sortedProducts,
+      maskImage
     });
 
   } catch (error) {
