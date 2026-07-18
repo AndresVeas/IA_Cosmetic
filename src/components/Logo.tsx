@@ -117,9 +117,9 @@ export default function Logo({ showTagline = false, className = "", alignment = 
       <div className={`flex flex-col items-center text-center gap-3 shrink-0 ${className}`}>
         <LogoIcon className="w-20 h-20 text-brand-plum flex-shrink-0" />
         <div className="flex flex-col items-center">
-          <div className="font-serif text-2xl tracking-[0.15em] font-light leading-none flex items-center gap-1.5">
+          <div className="font-display text-2xl tracking-[0.08em] font-bold leading-none flex items-center gap-1.5">
             <span className="text-brand-plum font-bold">IA</span>
-            <span className="text-brand-accent font-light tracking-[0.2em] ml-1">COSMETIC</span>
+            <span className="text-brand-accent font-semibold tracking-[0.1em] ml-1">COSMETIC</span>
           </div>
           {/* Elegant star divider from user image */}
           <div className="flex items-center justify-center w-36 my-3 gap-2">
@@ -141,9 +141,9 @@ export default function Logo({ showTagline = false, className = "", alignment = 
     <div className={`flex items-center gap-2 shrink-0 ${className}`}>
       <LogoIcon className="w-12 h-12 text-brand-plum flex-shrink-0" />
       <div className="flex flex-col justify-center">
-        <div className="font-serif text-lg tracking-[0.12em] font-light leading-none flex items-center">
+        <div className="font-display text-lg tracking-[0.07em] font-bold leading-none flex items-center">
           <span className="text-brand-plum font-bold">IA</span>
-          <span className="text-brand-accent font-light tracking-[0.18em] ml-2">COSMETIC</span>
+          <span className="text-brand-accent font-semibold tracking-[0.09em] ml-2">COSMETIC</span>
         </div>
         {showTagline && (
           <span className="text-[6.5px] tracking-[0.25em] uppercase font-sans text-brand-plum/70 font-semibold mt-1">

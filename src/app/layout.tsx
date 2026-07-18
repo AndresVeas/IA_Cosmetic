@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import { Montserrat, Outfit, Urbanist } from "next/font/google";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-serif",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["600", "700", "800"],
+});
+
+const urbanist = Urbanist({
+  variable: "--font-urbanist",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const montserrat = Montserrat({
-  variable: "--font-sans",
+  variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${cormorant.variable} ${montserrat.variable} h-full antialiased`}
+      className={`${outfit.variable} ${urbanist.variable} ${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#FDFBF7] text-[#1A1A1A] font-sans flex flex-col">
         {children}
