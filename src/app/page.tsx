@@ -1,48 +1,57 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, Sparkles, Shield, Beaker } from "lucide-react";
+import { Camera, Sparkles, Check, ArrowRight, Cpu, Shield, Award, Sparkle } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Home() {
   const showcaseProducts = [
     {
-      name: "IA Cosmetic Sérum Niacinamide 10% + Zinc 1%",
-      type: "Producto Estrella",
-      description: "Trata acné y manchas simultáneamente, regulando el sebo y unificando el tono.",
+      name: "Clarité Serum",
+      type: "Fórmula Activa",
+      description: "Niacinamida 10% + Zinc PCA. Trata acné y manchas regulando el sebo y unificando el tono.",
       price: "$38.00",
       image: "/products/niacinamide.png",
       tag: "Acné & Manchas"
     },
     {
-      name: "IA Cosmetic Gel Limpiador Ácido Salicílico",
-      type: "Purificante",
-      description: "Exfoliación profunda con BHA para destapar poros y prevenir imperfecciones.",
-      price: "$26.50",
-      image: "/products/cleanser.png",
-      tag: "Acné"
+      name: "Lumière Cream",
+      type: "Tratamiento Reparador",
+      description: "Retinol Encapsulado + Péptidos. Estimula la renovación celular y suaviza arrugas de expresión.",
+      price: "$52.00",
+      image: "/products/retinol.png",
+      tag: "Anti-Edad"
     },
     {
-      name: "IA Cosmetic Corrector Antimanchas Vitamina C",
-      type: "Iluminador",
-      description: "Potente antioxidante que desvanece la hiperpigmentación y unifica el tono.",
+      name: "Hydra Balance",
+      type: "Restaurador Profundo",
+      description: "Ácido Hialurónico + Ceramidas. Retiene la humedad y fortalece la barrera protectora de la piel.",
+      price: "$48.00",
+      image: "/products/multipeptides.png",
+      tag: "Hidratación"
+    },
+    {
+      name: "Barrier Repair",
+      type: "Calmante Activo",
+      description: "Centella Asiática + Probióticos. Reduce rojeces, desinflama y equilibra el microbioma cutáneo.",
       price: "$45.00",
       image: "/products/vitc.png",
-      tag: "Manchas"
+      tag: "Barrera"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col selection:bg-[#8E7E73]/20">
+    <div className="min-h-screen bg-[#F7F4F1] flex flex-col selection:bg-brand-dusty-rose/30 text-brand-plum font-sans">
       {/* Header */}
-      <header className="border-b border-[#8E7E73]/10 py-6 px-8 flex justify-between items-center bg-[#FDFBF7]/80 backdrop-blur-md sticky top-0 z-50">
-        <Link href="/" className="font-serif text-2xl tracking-[0.15em] font-light text-[#1A1A1A]">
-          IA_COSMETIC
+      <header className="border-b border-brand-dusty-rose/20 py-4 px-6 sm:px-12 flex justify-between items-center bg-[#F7F4F1]/90 backdrop-blur-md sticky top-0 z-50">
+        <Link href="/">
+          <Logo />
         </Link>
-        <nav className="hidden md:flex gap-8 items-center text-sm tracking-widest text-[#8E7E73]">
-          <a href="#metodo" className="hover:text-[#1A1A1A] transition-colors duration-300">EL MÉTODO</a>
-          <a href="#productos" className="hover:text-[#1A1A1A] transition-colors duration-300">PRODUCTOS</a>
+        <nav className="hidden md:flex gap-8 items-center text-xs tracking-[0.15em] font-semibold text-brand-plum/80">
+          <a href="#metodo" className="hover:text-brand-plum transition-colors duration-300">EL MÉTODO</a>
+          <a href="#productos" className="hover:text-brand-plum transition-colors duration-300">PRODUCTOS</a>
           <Link 
             href="/diagnostico" 
-            className="bg-[#1A1A1A] text-white px-6 py-2.5 rounded-full text-xs font-semibold hover:bg-[#8E7E73] transition-all duration-300 hover:shadow-lg hover:shadow-[#8E7E73]/10"
+            className="bg-brand-plum text-[#F7F4F1] px-5 py-2.5 rounded-full hover:bg-brand-dusty-rose hover:text-brand-plum transition-all duration-300 hover:shadow-md font-bold tracking-widest text-[10px]"
           >
             DIAGNÓSTICO EN VIVO
           </Link>
@@ -50,118 +59,232 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-24 md:py-32 px-6 flex flex-col items-center text-center max-w-6xl mx-auto flex-1 justify-center">
-        {/* Subtle decorative blurred circles for spa feeling */}
-        <div className="absolute top-1/4 left-10 w-72 h-72 rounded-full bg-[#F5EFEB]/60 blur-3xl -z-10" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-[#8E7E73]/5 blur-3xl -z-10" />
+      <section className="relative overflow-hidden py-16 md:py-24 px-6 sm:px-12 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
+        {/* Soft abstract color blobs in background */}
+        <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-brand-lavender/50 blur-3xl -z-10" />
+        <div className="absolute bottom-10 right-1/4 w-96 h-96 rounded-full bg-brand-rose/40 blur-3xl -z-10" />
 
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#8E7E73]/20 bg-[#F5EFEB]/30 text-xs tracking-widest text-[#8E7E73] uppercase mb-8 animate-fade-in">
-          <Sparkles className="w-3.5 h-3.5" />
-          Diagnóstico Dermo-Cosmético Computarizado
+        {/* Hero Left Content */}
+        <div className="flex-grow flex-shrink-0 lg:max-w-2xl animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-brand-dusty-rose bg-brand-rose/20 text-[10px] tracking-widest text-brand-plum uppercase font-bold mb-6">
+            <Sparkles className="w-3 h-3 text-brand-plum" />
+            DIAGNÓSTICO DERMO-COSMÉTICO CON IA
+          </div>
+
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-light tracking-wide text-brand-plum leading-[1.15] mb-6">
+            Conoce tu piel.<br />
+            Transforma tu rutina.<br />
+            <span className="italic font-normal text-brand-dusty-rose">Con ciencia e inteligencia.</span>
+          </h1>
+
+          <p className="text-base md:text-lg text-brand-plum/80 font-light leading-relaxed mb-10 max-w-xl">
+            IA_COSMETIC fusiona visión computacional U-Net con formulación boutique para ofrecerte un diagnóstico profundo y recomendaciones personalizadas en tiempo real de forma científica.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+            <Link
+              href="/diagnostico"
+              className="group flex items-center justify-center gap-3 bg-brand-plum text-[#F7F4F1] px-8 py-4 rounded-full text-xs tracking-widest font-bold hover:bg-brand-dusty-rose hover:text-brand-plum transition-all duration-300 hover:shadow-lg"
+            >
+              <Camera className="w-4 h-4 transition-transform group-hover:scale-110" />
+              INICIAR DIAGNÓSTICO &rarr;
+            </Link>
+            <a
+              href="#productos"
+              className="flex items-center justify-center border border-brand-dusty-rose text-brand-plum px-8 py-4 rounded-full text-xs tracking-widest font-bold hover:bg-brand-rose/20 transition-all duration-300"
+            >
+              VER CATÁLOGO
+            </a>
+          </div>
         </div>
 
-        <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-light tracking-wide text-[#1A1A1A] leading-[1.15] max-w-4xl mb-8">
-          Descubre las necesidades de tu piel de forma <span className="italic font-normal text-[#8E7E73]">científica</span>
-        </h1>
+        {/* Hero Right Visual Column */}
+        <div className="flex-1 max-w-md lg:max-w-lg mx-auto w-full relative">
+          <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden border border-brand-dusty-rose/30 shadow-2xl bg-brand-rose/10">
+            {/* The generated high-end model face image */}
+            <Image
+              src="/hero-skin.png"
+              alt="Análisis Dermo-Cosmético de Piel"
+              fill
+              className="object-cover"
+              priority
+            />
+            {/* U-Net Grid Overlay Mask */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/30 to-brand-rose/30 mix-blend-multiply" />
+            
+            {/* Futuristic Animated SVG Wireframe Layer */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-80" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Mesh connection lines mapping the facial features */}
+              <path d="M120,150 L200,120 L280,150 L310,220 L200,280 L90,220 Z" stroke="#581E2E" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+              <path d="M120,150 L200,200 L280,150 L280,240 L200,280 L120,240 Z" stroke="#581E2E" strokeWidth="1.2" opacity="0.4" />
+              <path d="M200,120 L200,200 L200,280" stroke="#581E2E" strokeWidth="1" opacity="0.5" />
+              <path d="M90,220 L200,200 L310,220" stroke="#581E2E" strokeWidth="1" opacity="0.5" />
+              
+              {/* Nodes */}
+              <circle cx="120" cy="150" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" className="animate-pulse" />
+              <circle cx="200" cy="120" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
+              <circle cx="280" cy="150" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" className="animate-pulse" />
+              <circle cx="310" cy="220" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
+              <circle cx="200" cy="280" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
+              <circle cx="90" cy="220" r="3" fill="#DCC6D6" stroke="#581E2E" strokeWidth="1" />
+              <circle cx="200" cy="200" r="4.5" fill="#581E2E" className="animate-ping" style={{ animationDuration: '3.5s' }} />
+              <circle cx="200" cy="200" r="2.5" fill="#581E2E" />
 
-        <p className="text-base sm:text-lg text-[#8E7E73] max-w-2xl font-light leading-relaxed mb-12">
-          IA_Cosmetic fusiona la visión computacional U-Net con la formulación boutique para analizar tu rostro en tiempo real y recomendar el ritual dermo-cosmético perfecto de nuestra base de datos inteligente.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link
-            href="/diagnostico"
-            className="group flex items-center justify-center gap-3 bg-[#1A1A1A] text-white px-8 py-4 rounded-full text-sm font-medium hover:bg-[#8E7E73] transition-all duration-300 hover:shadow-xl hover:shadow-[#8E7E73]/20"
-          >
-            <Camera className="w-4 h-4 transition-transform group-hover:scale-110" />
-            Iniciar Diagnóstico
-          </Link>
-          <a
-            href="#productos"
-            className="flex items-center justify-center border border-[#8E7E73]/30 text-[#1A1A1A] px-8 py-4 rounded-full text-sm font-medium hover:border-[#1A1A1A] hover:bg-[#F5EFEB]/20 transition-all duration-300"
-          >
-            Ver Catálogo
-          </a>
+              {/* Diagnostic markers */}
+              <path d="M150,220 L180,240 L220,240 L250,220" stroke="#DCC6D6" strokeWidth="1" />
+              <circle cx="150" cy="220" r="2" fill="#DCC6D6" />
+              <circle cx="250" cy="220" r="2" fill="#DCC6D6" />
+              
+              {/* Horizontal scanning light bar */}
+              <line x1="0" y1="180" x2="400" y2="180" stroke="#581E2E" strokeWidth="1" opacity="0.3" className="animate-bounce" style={{ animationDuration: '7s' }} />
+            </svg>
+          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="metodo" className="bg-[#F5EFEB]/40 py-20 px-6 border-t border-b border-[#8E7E73]/10">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="font-serif text-3xl md:text-4xl text-center font-light tracking-wide mb-16 text-[#1A1A1A]">
-            Cuidado Avanzado de la Piel
-          </h2>
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-[#F5EFEB] flex items-center justify-center text-[#8E7E73] mb-6">
+      {/* Feature Blocks Section */}
+      <section id="metodo" className="bg-brand-sand/30 py-20 px-6 sm:px-12 border-t border-b border-brand-dusty-rose/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Camera className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-xl font-medium mb-3 text-[#1A1A1A]">Visión Artificial</h3>
-              <p className="text-sm text-[#8E7E73] font-light leading-relaxed">
-                Escaneo instantáneo a través de la cámara para segmentar acné, manchas de sol, hiperpigmentación y arrugas de expresión.
+              <h3 className="font-serif text-lg font-medium mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
+              <p className="text-sm text-brand-plum/70 font-light leading-relaxed">
+                Escaneo instantáneo de imperfecciones para evaluar acné, manchas de sol, líneas de expresión e hiperpigmentación con alta precisión.
               </p>
+              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+                Conocer más &rarr;
+              </Link>
             </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-[#F5EFEB] flex items-center justify-center text-[#8E7E73] mb-6">
-                <Beaker className="w-5 h-5" />
+
+            <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-brand-rose/40 flex items-center justify-center text-brand-plum mb-6">
+                <Cpu className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-xl font-medium mb-3 text-[#1A1A1A]">Ingredientes Activos</h3>
-              <p className="text-sm text-[#8E7E73] font-light leading-relaxed">
-                Formulaciones concentradas basadas en Niacinamida, Ácido Salicílico purificado, Vitamina C estabilizada y Retinol encapsulado.
+              <h3 className="font-serif text-lg font-medium mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
+              <p className="text-sm text-brand-plum/70 font-light leading-relaxed">
+                Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance celular de tu rostro.
               </p>
+              <a href="#productos" className="inline-flex items-center gap-1.5 text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+                Conocer más &rarr;
+              </a>
             </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-[#F5EFEB] flex items-center justify-center text-[#8E7E73] mb-6">
-                <Shield className="w-5 h-5" />
+
+            <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
+                <Sparkle className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-xl font-medium mb-3 text-[#1A1A1A]">Prescripción Boutique</h3>
-              <p className="text-sm text-[#8E7E73] font-light leading-relaxed">
-                Recomendaciones dinámicas directas de nuestra base de datos Neon PostgreSQL optimizadas según el diagnóstico dermo-cosmético.
+              <h3 className="font-serif text-lg font-medium mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
+              <p className="text-sm text-brand-plum/70 font-light leading-relaxed">
+                Rutinas y combinaciones personalizadas basadas en tu análisis biométrico, conectadas de forma dinámica a nuestro catálogo inteligente.
               </p>
+              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+                Conocer más &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Middle Elegant Banner */}
+      <section className="bg-brand-lavender py-20 px-6 sm:px-12 border-b border-brand-dusty-rose/10">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
+          <div className="lg:max-w-md">
+            <span className="text-xs tracking-widest text-brand-plum uppercase font-bold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-brand-plum font-light leading-snug">
+              Beneficios que se ven, ciencia que se siente.
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6 lg:max-w-3xl w-full">
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
+                <Check className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-serif text-lg font-semibold text-brand-plum">Diagnóstico preciso</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-light mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
+                <Check className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-serif text-lg font-semibold text-brand-plum">Personalización real</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-light mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
+                <Check className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-serif text-lg font-semibold text-brand-plum">Resultados visibles</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-light mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
+                <Check className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-serif text-lg font-semibold text-brand-plum">Seguridad & transparencia</h4>
+                <p className="text-sm text-brand-plum/70 leading-relaxed font-light mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Products Section */}
-      <section id="productos" className="py-24 px-6 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <span className="text-xs tracking-widest text-[#8E7E73] uppercase block mb-3 font-semibold">Boutique de Fórmulas</span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-light tracking-wide text-[#1A1A1A]">
-            La Colección IA_Cosmetic
-          </h2>
+      <section id="productos" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto w-full">
+        <div className="flex justify-between items-end mb-12">
+          <div>
+            <span className="text-[10px] tracking-widest text-brand-plum/70 uppercase block mb-3 font-bold">FÓRMULAS DESTACADAS</span>
+            <h2 className="font-serif text-3xl sm:text-4xl font-light tracking-wide text-brand-plum">
+              Selección IA_Cosmetic
+            </h2>
+          </div>
+          <Link
+            href="/diagnostico"
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"
+          >
+            VER CATÁLOGO COMPLETO &rarr;
+          </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {showcaseProducts.map((product, index) => (
             <div 
               key={index} 
-              className="bg-[#F5EFEB]/10 border border-[#8E7E73]/15 rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-[#8E7E73]/5 hover:border-[#8E7E73]/40 transition-all duration-500 group flex flex-col h-full"
+              className="bg-white border border-brand-dusty-rose/20 rounded-[2rem] overflow-hidden hover:shadow-xl hover:border-brand-dusty-rose transition-all duration-500 group flex flex-col h-full shadow-sm"
             >
-              <div className="relative aspect-[4/5] w-full bg-[#F5EFEB]/30 overflow-hidden flex items-center justify-center p-8 border-b border-[#8E7E73]/10">
+              <div className="relative aspect-[4/5] w-full bg-brand-sand/20 overflow-hidden flex items-center justify-center p-6 border-b border-brand-dusty-rose/10">
                 <Image 
                   src={product.image} 
                   alt={product.name}
-                  width={240}
-                  height={300}
+                  width={200}
+                  height={250}
                   className="object-contain transition-transform duration-700 group-hover:scale-105"
                   priority
                 />
-                <span className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm border border-[#8E7E73]/20 px-3 py-1 rounded-full text-[10px] tracking-widest text-[#8E7E73] font-semibold uppercase">
+                <span className="absolute top-4 left-4 bg-brand-lavender text-brand-plum border border-brand-dusty-rose/40 px-3 py-1 rounded-full text-[9px] tracking-widest font-bold uppercase">
                   {product.tag}
                 </span>
               </div>
               <div className="p-6 flex flex-col flex-1">
-                <span className="text-xs text-[#8E7E73] tracking-widest uppercase mb-1">{product.type}</span>
-                <h3 className="font-serif text-lg font-medium text-[#1A1A1A] mb-2 leading-snug">{product.name}</h3>
-                <p className="text-xs text-[#8E7E73] font-light leading-relaxed mb-6 flex-1">{product.description}</p>
-                <div className="flex justify-between items-center border-t border-[#8E7E73]/10 pt-4">
-                  <span className="font-medium text-sm text-[#1A1A1A]">{product.price}</span>
+                <span className="text-[10px] text-brand-dusty-rose tracking-widest uppercase mb-1 font-semibold">{product.type}</span>
+                <h3 className="font-serif text-base font-semibold text-brand-plum mb-2 leading-snug">{product.name}</h3>
+                <p className="text-sm text-brand-plum/70 font-light leading-relaxed mb-6 flex-1">{product.description}</p>
+                <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
+                  <span className="font-semibold text-sm text-brand-plum">{product.price}</span>
                   <Link 
                     href="/diagnostico" 
-                    className="text-xs tracking-widest font-semibold text-[#1A1A1A] hover:text-[#8E7E73] transition-colors duration-300"
+                    className="text-[10px] tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"
                   >
-                    DIAGNÓSTICO →
+                    DIAGNÓSTICO &rarr;
                   </Link>
                 </div>
               </div>
@@ -170,11 +293,15 @@ export default function Home() {
         </div>
       </section>
 
+
+      
       {/* Footer */}
-      <footer className="border-t border-[#8E7E73]/10 bg-[#F5EFEB]/20 py-12 px-8 text-center text-[#8E7E73] text-xs tracking-widest mt-auto">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="font-serif text-lg tracking-[0.15em] text-[#1A1A1A]">IA_COSMETIC</p>
-          <p>© {new Date().getFullYear()} IA_COSMETIC. TODOS LOS DERECHOS RESERVADOS. CIENCIA Y BELLEZA.</p>
+      <footer className="border-t border-brand-dusty-rose/20 bg-brand-sand/10 py-12 px-6 sm:px-12 text-brand-plum/80 text-xs tracking-widest mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <Logo />
+          <p className="text-[10px] text-center md:text-right font-light">
+            &copy; {new Date().getFullYear()} IA_COSMETIC. TODOS LOS DERECHOS RESERVADOS. CIENCIA Y BELLEZA.
+          </p>
         </div>
       </footer>
     </div>
