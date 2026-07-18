@@ -27,7 +27,7 @@ ort_session = None
 def load_model():
     global ort_session
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, "best_model.onnx")
+    model_path = os.path.join(base_dir, "best_model_iou.onnx")
     if not os.path.exists(model_path):
         print(f"[!] ADVERTENCIA: No se encontró '{model_path}' en el directorio. La inferencia fallará hasta que esté presente.")
         return
@@ -51,7 +51,7 @@ def analyze_skin(payload: AnalysisRequest):
 
     global ort_session
     if ort_session is None:
-        raise HTTPException(status_code=503, detail="El modelo ONNX no está cargado. Verifica que best_model.onnx exista en la raíz.")
+        raise HTTPException(status_code=503, detail="El modelo ONNX no está cargado. Verifica que best_model_iou.onnx exista en la raíz.")
 
     try:
         # 1. Decodificar la imagen base64

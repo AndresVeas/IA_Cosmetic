@@ -13,7 +13,7 @@ def main():
         )
         
         print("Cargando pesos de best_model.pth...")
-        model.load_state_dict(torch.load("best_model.pth", map_location="cpu"))
+        model.load_state_dict(torch.load("best_model_iou.pth", map_location="cpu"))
         model.eval()
         
         print("Generando tensor dummy de entrada (1x3x256x256)...")
@@ -24,7 +24,7 @@ def main():
         torch.onnx.export(
             model,
             dummy_input,
-            "best_model.onnx",
+            "best_model_iou.onnx",
             export_params=True,
             opset_version=11,
             do_constant_folding=True,
