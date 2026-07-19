@@ -70,13 +70,25 @@ def analyze_skin(payload: AnalysisRequest):
         # 2. Preprocesar: Obtener dimensiones originales de la imagen
         h_orig, w_orig = img_rgb.shape[:2]
         
-        # Definir tamaño del parche (mitad de la resolución original para simular acercamientos de cuadrantes)
-        patch_w = w_orig // 2
-        patch_h = h_orig // 2
+        # Delimitar la región del rostro en base al óvalo de la guía visual (en escala 640x480 es X:155-485, Y:35-425)
+        min_x_f = int(w_orig * (155 / 640))
+        max_x_f = int(w_orig * (485 / 640))
+        min_y_f = int(h_orig * (35 / 480))
+        max_y_f = int(h_orig * (425 / 480))
         
-        # Grid de offsets adaptados para cubrir hasta el último píxel de la imagen con solapamiento
-        x_offsets = [0, w_orig // 4, w_orig - patch_w]
-        y_offsets = [0, h_orig // 4, h_orig - patch_h]
+        w_face = max_x_f - min_x_f
+        h_face = max_y_f - min_y_f
+        
+        # Extraer la región del rostro de la imagen original en alta resolución
+        face_img = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
+        
+        # Definir tamaño del parche (65% del ancho/alto de la región facial para simular acercamientos de sienes y mejillas)
+        patch_w = int(w_face * 0.65)
+        patch_h = int(h_face * 0.65)
+        
+        # Offsets en la región facial (2x2 = 4 parches con solapamiento en el centro)
+        x_offsets = [0, w_face - patch_w]
+        y_offsets = [0, h_face - patch_h]
         
         patches = []
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -84,8 +96,8 @@ def analyze_skin(payload: AnalysisRequest):
         
         for y in y_offsets:
             for x in x_offsets:
-                # Extraer parche de la imagen original en alta resolución
-                patch = img_rgb[y : y + patch_h, x : x + patch_w]
+                # Extraer parche de la región facial
+                patch = face_img[y : y + patch_h, x : x + patch_w]
                 # Redimensionar a 256x256 (tamaño esperado por la U-Net)
                 patch_resized = cv2.resize(patch, (256, 256), interpolation=cv2.INTER_LINEAR)
                 # Normalizar
@@ -93,20 +105,20 @@ def analyze_skin(payload: AnalysisRequest):
                 patch_tensor = np.transpose(patch_normalized, (2, 0, 1)).astype(np.float32)
                 patches.append(patch_tensor)
                 
-        # Apilar todos los parches en un lote de shape: [9, 3, 256, 256]
+        # Apilar todos los parches en un lote de shape: [4, 3, 256, 256]
         batch_tensor = np.stack(patches, axis=0)
         
         # 3. Correr Inferencia en Batch con ONNX Runtime
         input_name = ort_session.get_inputs()[0].name
         output_name = ort_session.get_outputs()[0].name
         raw_outputs = ort_session.run([output_name], {input_name: batch_tensor})
-        batch_logits = raw_outputs[0]  # Shape: [9, 4, 256, 256]
+        batch_logits = raw_outputs[0]  # Shape: [4, 4, 256, 256]
         
-        # 4. Reconstrucción y Mezcla (Blending) a la resolución original de la imagen
-        accum_logits = np.zeros((4, h_orig, w_orig), dtype=np.float32)
-        accum_count = np.zeros((h_orig, w_orig), dtype=np.float32)
+        # 4. Reconstrucción y Mezcla (Blending) a la resolución de la región facial
+        accum_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
+        accum_count_face = np.zeros((h_face, w_face), dtype=np.float32)
         
-        # Crear ventana coseno 2D para suavizar bordes del parche
+        # Crear ventana coseno 2D para suavizado de bordes del parche
         t_w = np.sin(np.linspace(0, np.pi, patch_w))
         t_h = np.sin(np.linspace(0, np.pi, patch_h))
         weight_2d = np.outer(t_h, t_w).astype(np.float32)
@@ -117,19 +129,26 @@ def analyze_skin(payload: AnalysisRequest):
             for x in x_offsets:
                 patch_logits_256 = batch_logits[idx]  # Shape: [4, 256, 256]
                 
-                # Redimensionar logits del parche a su tamaño original (patch_h x patch_w)
+                # Redimensionar logits del parche a su tamaño original en la cara
                 patch_logits_orig = np.zeros((4, patch_h, patch_w), dtype=np.float32)
                 for c in range(4):
                     patch_logits_orig[c] = cv2.resize(patch_logits_256[c], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
                 
                 # Acumular logits ponderados
                 for c in range(4):
-                    accum_logits[c, y : y + patch_h, x : x + patch_w] += patch_logits_orig[c] * weight_2d
-                accum_count[y : y + patch_h, x : x + patch_w] += weight_2d
+                    accum_logits_face[c, y : y + patch_h, x : x + patch_w] += patch_logits_orig[c] * weight_2d
+                accum_count_face[y : y + patch_h, x : x + patch_w] += weight_2d
                 idx += 1
                 
-        # Promediar logits solapados a resolución original
-        final_logits_orig = accum_logits / np.expand_dims(accum_count, axis=0)
+        # Promediar logits solapados en la región facial
+        final_logits_face = accum_logits_face / np.expand_dims(accum_count_face, axis=0)
+        
+        # Reconstruir los logits de la imagen original completa (llenando el resto con fondo)
+        final_logits_orig = np.full((4, h_orig, w_orig), -100.0, dtype=np.float32)
+        final_logits_orig[0] = 10.0  # Fondo/Piel sana por defecto
+        
+        # Insertar los logits de la cara en sus coordenadas originales
+        final_logits_orig[:, min_y_f : max_y_f, min_x_f : max_x_f] = final_logits_face
         
         # Redimensionar logits globales a 640x480 para el frontend
         final_logits_640 = np.zeros((4, 480, 640), dtype=np.float32)
@@ -143,8 +162,7 @@ def analyze_skin(payload: AnalysisRequest):
         # Obtener la predicción de la clase ganadora (argmax)
         prediction_scaled = np.argmax(final_logits_640, axis=0).astype(np.uint8)  # Shape: [480, 640]
         
-        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL ---
-        # Creamos una máscara ovalada estática que coincide exactamente con la silueta/guía visual del Frontend
+        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL ESTÁTICA ---
         face_guide_mask = np.zeros((480, 640), dtype=np.uint8)
         cv2.ellipse(face_guide_mask, (320, 230), (165, 195), 0, 0, 360, 255, -1)
         
