@@ -42,11 +42,11 @@ next-env.d.ts
 
 venv_wsl/
 
-# Modelos pesados de investigación
-research/best_model.pth
+# Modelos pesados y pesos de entrenamiento (.pth, .onnx, .onnx.data)
+*.pth
+*.onnx
+*.onnx.data
 
-# Python cache
-__pycache__/
-*.pyc
-.pytest_cache/
-
+# Exceptuar únicamente el modelo ONNX que corre en el FastAPI
+!backend/best_model.onnx
+!backend/best_model.onnx.data
