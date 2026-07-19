@@ -67,104 +67,92 @@ def analyze_skin(payload: AnalysisRequest):
             
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        # 2. Preprocesar: redimensionar a 256x256
-        img_resized = cv2.resize(img_rgb, (256, 256))
+        # 2. Preprocesar: Obtener dimensiones originales de la imagen
+        h_orig, w_orig = img_rgb.shape[:2]
         
-        # Normalizar con estadísticas de ImageNet
+        # Definir tamaño del parche (mitad de la resolución original para simular acercamientos de cuadrantes)
+        patch_w = w_orig // 2
+        patch_h = h_orig // 2
+        
+        # Grid de offsets adaptados para cubrir hasta el último píxel de la imagen con solapamiento
+        x_offsets = [0, w_orig // 4, w_orig - patch_w]
+        y_offsets = [0, h_orig // 4, h_orig - patch_h]
+        
+        patches = []
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        img_normalized = (img_resized / 255.0 - mean) / std
         
-        # Formatear a tensor [1, 3, 256, 256] para ONNX (numpy float32)
-        img_tensor = np.transpose(img_normalized, (2, 0, 1))
-        img_tensor = np.expand_dims(img_tensor, axis=0).astype(np.float32)
+        for y in y_offsets:
+            for x in x_offsets:
+                # Extraer parche de la imagen original en alta resolución
+                patch = img_rgb[y : y + patch_h, x : x + patch_w]
+                # Redimensionar a 256x256 (tamaño esperado por la U-Net)
+                patch_resized = cv2.resize(patch, (256, 256), interpolation=cv2.INTER_LINEAR)
+                # Normalizar
+                patch_normalized = (patch_resized / 255.0 - mean) / std
+                patch_tensor = np.transpose(patch_normalized, (2, 0, 1)).astype(np.float32)
+                patches.append(patch_tensor)
+                
+        # Apilar todos los parches en un lote de shape: [9, 3, 256, 256]
+        batch_tensor = np.stack(patches, axis=0)
         
-        # 3. Correr Inferencia con ONNX Runtime
+        # 3. Correr Inferencia en Batch con ONNX Runtime
         input_name = ort_session.get_inputs()[0].name
         output_name = ort_session.get_outputs()[0].name
-        raw_outputs = ort_session.run([output_name], {input_name: img_tensor})
+        raw_outputs = ort_session.run([output_name], {input_name: batch_tensor})
+        batch_logits = raw_outputs[0]  # Shape: [9, 4, 256, 256]
         
-        # Obtener los logits crudos del modelo
-        logits = raw_outputs[0][0]  # Shape: [4, 256, 256]
+        # 4. Reconstrucción y Mezcla (Blending) a la resolución original de la imagen
+        accum_logits = np.zeros((4, h_orig, w_orig), dtype=np.float32)
+        accum_count = np.zeros((h_orig, w_orig), dtype=np.float32)
         
-        # Calcular softmax para obtener probabilidades de confianza por píxel
-        logits_exp = np.exp(logits - np.max(logits, axis=0, keepdims=True))
-        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)
+        # Crear ventana coseno 2D para suavizar bordes del parche
+        t_w = np.sin(np.linspace(0, np.pi, patch_w))
+        t_h = np.sin(np.linspace(0, np.pi, patch_h))
+        weight_2d = np.outer(t_h, t_w).astype(np.float32)
+        weight_2d = np.maximum(weight_2d, 0.05)  # Evitar división por cero en bordes extremos
         
-        # 4. Obtener la predicción de la clase ganadora por píxel (argmax)
-        prediction = np.argmax(logits, axis=0).astype(np.uint8)  # Shape: [256, 256]
+        idx = 0
+        for y in y_offsets:
+            for x in x_offsets:
+                patch_logits_256 = batch_logits[idx]  # Shape: [4, 256, 256]
+                
+                # Redimensionar logits del parche a su tamaño original (patch_h x patch_w)
+                patch_logits_orig = np.zeros((4, patch_h, patch_w), dtype=np.float32)
+                for c in range(4):
+                    patch_logits_orig[c] = cv2.resize(patch_logits_256[c], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
+                
+                # Acumular logits ponderados
+                for c in range(4):
+                    accum_logits[c, y : y + patch_h, x : x + patch_w] += patch_logits_orig[c] * weight_2d
+                accum_count[y : y + patch_h, x : x + patch_w] += weight_2d
+                idx += 1
+                
+        # Promediar logits solapados a resolución original
+        final_logits_orig = accum_logits / np.expand_dims(accum_count, axis=0)
         
-        # Redimensionar la predicción a la resolución de salida (640x480) usando vecino más cercano (INTER_NEAREST)
-        prediction_scaled = cv2.resize(prediction, (640, 480), interpolation=cv2.INTER_NEAREST)
-        
-        # --- ALGORITMOS DE VISIÓN POR COMPUTADORA HÍBRIDOS (CV ENHANCERS) ---
-        # Redimensionar la imagen decodificada a 640x480 para aplicar filtros espaciales
-        img_640 = cv2.resize(img, (640, 480))
-        
-        # Segmentación básica de piel en espacio YCrCb para restringir las detecciones al rostro
-        img_ycrcb = cv2.cvtColor(img_640, cv2.COLOR_BGR2YCrCb)
-        lower_skin = np.array([0, 133, 77], dtype=np.uint8)
-        upper_skin = np.array([255, 173, 127], dtype=np.uint8)
-        skin_mask = cv2.inRange(img_ycrcb, lower_skin, upper_skin)
-        
-        # --- MÁSCARA FACIAL EN ELIPSE DINÁMICA BASADA EN LAS PREDICCIONES DE U-NET ---
-        # Usamos los límites de la predicción de la red neuronal para estimar con total precisión
-        # la ubicación de la cara del paciente, evitando fallas por librerías CascadeClassifier externas.
-        face_mask = np.zeros((480, 640), dtype=np.uint8)
-        unet_y, unet_x = np.where(prediction_scaled > 0)
-        
-        if len(unet_x) > 0 and len(unet_y) > 0:
-            min_x, max_x = np.min(unet_x), np.max(unet_x)
-            min_y, max_y = np.min(unet_y), np.max(unet_y)
+        # Redimensionar logits globales a 640x480 para el frontend
+        final_logits_640 = np.zeros((4, 480, 640), dtype=np.float32)
+        for c in range(4):
+            final_logits_640[c] = cv2.resize(final_logits_orig[c], (640, 480), interpolation=cv2.INTER_LINEAR)
             
-            # Añadir margen (padding) para abarcar toda la cara
-            padding_x = 45
-            padding_y = 55
-            min_x = max(0, min_x - padding_x)
-            max_x = min(640, max_x + padding_x)
-            min_y = max(0, min_y - padding_y)
-            max_y = min(480, max_y + padding_y)
+        # Calcular softmax para obtener probabilidades de confianza por píxel a 640x480
+        logits_exp = np.exp(final_logits_640 - np.max(final_logits_640, axis=0, keepdims=True))
+        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)  # Shape: [4, 480, 640]
+        
+        # Obtener la predicción de la clase ganadora (argmax)
+        prediction_scaled = np.argmax(final_logits_640, axis=0).astype(np.uint8)  # Shape: [480, 640]
+        
+        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL ---
+        # Creamos una máscara ovalada estática que coincide exactamente con la silueta/guía visual del Frontend
+        face_guide_mask = np.zeros((480, 640), dtype=np.uint8)
+        cv2.ellipse(face_guide_mask, (320, 230), (165, 195), 0, 0, 360, 255, -1)
+        
+        # Todo lo que esté fuera del óvalo facial se fuerza a clase 0 (Fondo/Piel Sana)
+        prediction_scaled[face_guide_mask == 0] = 0
+        for c in range(1, 4):
+            probs[c][face_guide_mask == 0] = 0.0
             
-            # Dibujar un óvalo centrado en la caja delimitadora de la U-Net
-            center = (int((min_x + max_x) / 2), int((min_y + max_y) / 2))
-            axes = (int((max_x - min_x) / 2), int((max_y - min_y) / 2))
-            cv2.ellipse(face_mask, center, axes, 0, 0, 360, 255, -1)
-        else:
-            # Óvalo central por defecto en caso de no haber detecciones
-            cv2.ellipse(face_mask, (320, 240), (180, 220), 0, 0, 360, 255, -1)
-            
-        # Combinar la segmentación de color de piel con el óvalo del rostro
-        valid_skin_mask = cv2.bitwise_and(skin_mask, face_mask)
-        
-        # A. Extractor de Manchas (LAB local contrast)
-        lab = cv2.cvtColor(img_640, cv2.COLOR_BGR2LAB)
-        l_channel, _, _ = cv2.split(lab)
-        bg_l = cv2.bilateralFilter(l_channel, 25, 100, 100)
-        diff_l = cv2.subtract(bg_l, l_channel)
-        _, cv_spots = cv2.threshold(diff_l, 10, 255, cv2.THRESH_BINARY)
-        cv_spots = cv2.bitwise_and(cv_spots, valid_skin_mask)
-        
-        # B. Extractor de Arrugas finas (Black-Hat Morphological filter)
-        gray = cv2.cvtColor(img_640, cv2.COLOR_BGR2GRAY)
-        smoothed = cv2.bilateralFilter(gray, 9, 75, 75)
-        kernel_wrinkles = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
-        blackhat_wrinkles = cv2.morphologyEx(smoothed, cv2.MORPH_BLACKHAT, kernel_wrinkles)
-        _, cv_wrinkles = cv2.threshold(blackhat_wrinkles, 4, 255, cv2.THRESH_BINARY)
-        cv_wrinkles = cv2.bitwise_and(cv_wrinkles, valid_skin_mask)
-        
-        # C. Extractor de Acné (Rojeces + Manchas oscuras pequeñas/acné grisáceo)
-        _, cr_channel, _ = cv2.split(img_ycrcb)
-        bg_cr = cv2.medianBlur(cr_channel, 15)
-        diff_cr = cv2.subtract(cr_channel, bg_cr)
-        _, cv_acne_red = cv2.threshold(diff_cr, 8, 255, cv2.THRESH_BINARY)
-        
-        kernel_acne = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
-        blackhat_acne = cv2.morphologyEx(smoothed, cv2.MORPH_BLACKHAT, kernel_acne)
-        _, cv_acne_dull = cv2.threshold(blackhat_acne, 6, 255, cv2.THRESH_BINARY)
-        
-        cv_acne = cv2.bitwise_or(cv_acne_red, cv_acne_dull)
-        cv_acne = cv2.bitwise_and(cv_acne, valid_skin_mask)
-        
         visual_overlay = []
         anomalies_detected = set()
         
@@ -183,25 +171,14 @@ def analyze_skin(payload: AnalysisRequest):
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
-            # Fusión híbrida de predicciones clásicas y U-Net
-            if class_id == 1:
-                class_mask = cv2.bitwise_or(class_mask, (cv_acne > 0).astype(np.uint8))
-            elif class_id == 2:
-                class_mask = cv2.bitwise_or(class_mask, (cv_spots > 0).astype(np.uint8))
-            elif class_id == 3:
-                class_mask = cv2.bitwise_or(class_mask, (cv_wrinkles > 0).astype(np.uint8))
-                
             # Pintar la máscara correspondiente a este canal en el overlay
             overlay_mask[class_mask == 1] = color_map[class_id]
             
-            # Redimensionar el mapa de probabilidad de la clase para calcular confianza
-            prob_scaled = cv2.resize(probs[class_id], (640, 480), interpolation=cv2.INTER_LINEAR)
-            
             # Contar píxeles activos en la resolución 640x480
             active_pixels = np.sum(class_mask)
-            print(f"[DEBUG] Clase {class_name.upper()} (Híbrido): {active_pixels} píxeles")
+            print(f"[DEBUG] Clase {class_name.upper()} (U-Net Patches): {active_pixels} píxeles")
             
-            # Encontrar contornos sobre la máscara híbrida final
+            # Encontrar contornos sobre la máscara final
             contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             class_overlays = []
@@ -214,8 +191,8 @@ def analyze_skin(payload: AnalysisRequest):
                 # Calcular la confianza/intensidad media de los píxeles de este contorno
                 single_contour_mask = np.zeros(class_mask.shape, dtype=np.uint8)
                 cv2.drawContours(single_contour_mask, [cnt], -1, 1, thickness=-1)
-                mean_conf = np.mean(prob_scaled[single_contour_mask == 1]) if np.sum(single_contour_mask) > 0 else 0.0
-                confidence_pct = max(75, int(mean_conf * 100))
+                mean_conf = np.mean(probs[class_id][single_contour_mask == 1]) if np.sum(single_contour_mask) > 0 else 0.0
+                confidence_pct = max(50, int(mean_conf * 100))
                 
                 # Determinar severidad según el tamaño del foco
                 if area < 50:
