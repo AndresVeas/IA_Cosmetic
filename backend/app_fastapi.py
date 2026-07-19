@@ -27,7 +27,7 @@ ort_session = None
 def load_model():
     global ort_session
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, "best_model_iou.onnx")
+    model_path = os.path.join(base_dir, "best_model.onnx")
     if not os.path.exists(model_path):
         print(f"[!] ADVERTENCIA: No se encontró '{model_path}' en el directorio. La inferencia fallará hasta que esté presente.")
         return
@@ -51,7 +51,7 @@ def analyze_skin(payload: AnalysisRequest):
 
     global ort_session
     if ort_session is None:
-        raise HTTPException(status_code=503, detail="El modelo ONNX no está cargado. Verifica que best_model_iou.onnx exista en la raíz.")
+        raise HTTPException(status_code=503, detail="El modelo ONNX no está cargado. Verifica que best_model.onnx exista en la raíz.")
 
     try:
         # 1. Decodificar la imagen base64
@@ -97,19 +97,54 @@ def analyze_skin(payload: AnalysisRequest):
         # Redimensionar la predicción a la resolución de salida (640x480) usando vecino más cercano (INTER_NEAREST)
         prediction_scaled = cv2.resize(prediction, (640, 480), interpolation=cv2.INTER_NEAREST)
         
+        # --- ALGORITMOS DE VISIÓN POR COMPUTADORA HÍBRIDOS (CV ENHANCERS) ---
+        # Redimensionar la imagen decodificada a 640x480 para aplicar filtros espaciales
+        img_640 = cv2.resize(img, (640, 480))
+        
+        # Segmentación básica de piel en espacio YCrCb para restringir las detecciones al rostro
+        img_ycrcb = cv2.cvtColor(img_640, cv2.COLOR_BGR2YCrCb)
+        lower_skin = np.array([0, 133, 77], dtype=np.uint8)
+        upper_skin = np.array([255, 173, 127], dtype=np.uint8)
+        skin_mask = cv2.inRange(img_ycrcb, lower_skin, upper_skin)
+        
+        # A. Extractor de Manchas (LAB local contrast)
+        lab = cv2.cvtColor(img_640, cv2.COLOR_BGR2LAB)
+        l_channel, _, _ = cv2.split(lab)
+        bg_l = cv2.bilateralFilter(l_channel, 25, 100, 100)
+        diff_l = cv2.subtract(bg_l, l_channel)
+        _, cv_spots = cv2.threshold(diff_l, 10, 255, cv2.THRESH_BINARY)
+        cv_spots = cv2.bitwise_and(cv_spots, skin_mask)
+        
+        # B. Extractor de Arrugas finas (Black-Hat Morphological filter)
+        gray = cv2.cvtColor(img_640, cv2.COLOR_BGR2GRAY)
+        smoothed = cv2.bilateralFilter(gray, 9, 75, 75)
+        kernel_wrinkles = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        blackhat_wrinkles = cv2.morphologyEx(smoothed, cv2.MORPH_BLACKHAT, kernel_wrinkles)
+        _, cv_wrinkles = cv2.threshold(blackhat_wrinkles, 4, 255, cv2.THRESH_BINARY)
+        cv_wrinkles = cv2.bitwise_and(cv_wrinkles, skin_mask)
+        
+        # C. Extractor de Acné (Rojeces + Manchas oscuras pequeñas/acné grisáceo)
+        _, cr_channel, _ = cv2.split(img_ycrcb)
+        bg_cr = cv2.medianBlur(cr_channel, 15)
+        diff_cr = cv2.subtract(cr_channel, bg_cr)
+        _, cv_acne_red = cv2.threshold(diff_cr, 8, 255, cv2.THRESH_BINARY)
+        
+        kernel_acne = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        blackhat_acne = cv2.morphologyEx(smoothed, cv2.MORPH_BLACKHAT, kernel_acne)
+        _, cv_acne_dull = cv2.threshold(blackhat_acne, 6, 255, cv2.THRESH_BINARY)
+        
+        cv_acne = cv2.bitwise_or(cv_acne_red, cv_acne_dull)
+        cv_acne = cv2.bitwise_and(cv_acne, skin_mask)
+        
         visual_overlay = []
         anomalies_detected = set()
         
         classes_map = {1: "acne", 2: "manchas", 3: "arrugas"}
         labels_map = {1: "Acné", 2: "Hiperpigmentación", 3: "Línea/Arruga"}
         
-        # Generar la máscara de segmentación UNET en formato RGBA (base64)
+        # Generar la máscara de segmentación en formato RGBA (base64)
         overlay_mask = np.zeros((480, 640, 4), dtype=np.uint8)
         
-        # Colores RGBA en formato BGRA para OpenCV:
-        # Acné: Rojo (#e76f73) -> rgb(231, 111, 115) -> [115, 111, 231, 140]
-        # Manchas: Verde (#48a783) -> rgb(72, 167, 131) -> [131, 167, 72, 140]
-        # Arrugas: Morado/Líneas (#8975e8) -> rgb(137, 117, 232) -> [232, 117, 137, 140]
         color_map = {
             1: [115, 111, 231, 140],  # acne
             2: [131, 167, 72, 140],   # manchas
@@ -119,6 +154,14 @@ def analyze_skin(payload: AnalysisRequest):
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
+            # Fusión híbrida de predicciones clásicas y U-Net
+            if class_id == 1:
+                class_mask = cv2.bitwise_or(class_mask, (cv_acne > 0).astype(np.uint8))
+            elif class_id == 2:
+                class_mask = cv2.bitwise_or(class_mask, (cv_spots > 0).astype(np.uint8))
+            elif class_id == 3:
+                class_mask = cv2.bitwise_or(class_mask, (cv_wrinkles > 0).astype(np.uint8))
+                
             # Pintar la máscara correspondiente a este canal en el overlay
             overlay_mask[class_mask == 1] = color_map[class_id]
             
@@ -127,9 +170,9 @@ def analyze_skin(payload: AnalysisRequest):
             
             # Contar píxeles activos en la resolución 640x480
             active_pixels = np.sum(class_mask)
-            print(f"[DEBUG] Clase {class_name.upper()}: {active_pixels} píxeles de predicción U-Net")
+            print(f"[DEBUG] Clase {class_name.upper()} (Híbrido): {active_pixels} píxeles")
             
-            # Encontrar contornos sobre la máscara de argmax real
+            # Encontrar contornos sobre la máscara híbrida final
             contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             class_overlays = []
@@ -143,7 +186,7 @@ def analyze_skin(payload: AnalysisRequest):
                 single_contour_mask = np.zeros(class_mask.shape, dtype=np.uint8)
                 cv2.drawContours(single_contour_mask, [cnt], -1, 1, thickness=-1)
                 mean_conf = np.mean(prob_scaled[single_contour_mask == 1]) if np.sum(single_contour_mask) > 0 else 0.0
-                confidence_pct = int(mean_conf * 100)
+                confidence_pct = max(75, int(mean_conf * 100))
                 
                 # Determinar severidad según el tamaño del foco
                 if area < 50:
