@@ -107,24 +107,30 @@ def analyze_skin(payload: AnalysisRequest):
         upper_skin = np.array([255, 173, 127], dtype=np.uint8)
         skin_mask = cv2.inRange(img_ycrcb, lower_skin, upper_skin)
         
-        # --- MÁSCARA FACIAL EN ELIPSE MEDIANTE HAAR CASCADE ---
-        # Detectar el rostro para ignorar cabello, orejas, cuello y fondo
+        # --- MÁSCARA FACIAL EN ELIPSE DINÁMICA BASADA EN LAS PREDICCIONES DE U-NET ---
+        # Usamos los límites de la predicción de la red neuronal para estimar con total precisión
+        # la ubicación de la cara del paciente, evitando fallas por librerías CascadeClassifier externas.
         face_mask = np.zeros((480, 640), dtype=np.uint8)
-        gray_640 = cv2.cvtColor(img_640, cv2.COLOR_BGR2GRAY)
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        faces = face_cascade.detectMultiScale(gray_640, 1.1, 4)
+        unet_y, unet_x = np.where(prediction_scaled > 0)
         
-        if len(faces) > 0:
-            # Seleccionar la cara más grande detectada en la foto
-            faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
-            fx, fy, fw, fh = faces[0]
+        if len(unet_x) > 0 and len(unet_y) > 0:
+            min_x, max_x = np.min(unet_x), np.max(unet_x)
+            min_y, max_y = np.min(unet_y), np.max(unet_y)
             
-            # Dibujar un óvalo facial principal (excluye orejas y cabello en las sienes)
-            center = (int(fx + fw / 2), int(fy + fh / 2))
-            axes = (int(fw * 0.45), int(fh * 0.55))
+            # Añadir margen (padding) para abarcar toda la cara
+            padding_x = 45
+            padding_y = 55
+            min_x = max(0, min_x - padding_x)
+            max_x = min(640, max_x + padding_x)
+            min_y = max(0, min_y - padding_y)
+            max_y = min(480, max_y + padding_y)
+            
+            # Dibujar un óvalo centrado en la caja delimitadora de la U-Net
+            center = (int((min_x + max_x) / 2), int((min_y + max_y) / 2))
+            axes = (int((max_x - min_x) / 2), int((max_y - min_y) / 2))
             cv2.ellipse(face_mask, center, axes, 0, 0, 360, 255, -1)
         else:
-            # Si no se detecta el rostro por condiciones de iluminación, usar una elipse central por defecto
+            # Óvalo central por defecto en caso de no haber detecciones
             cv2.ellipse(face_mask, (320, 240), (180, 220), 0, 0, 360, 255, -1)
             
         # Combinar la segmentación de color de piel con el óvalo del rostro
