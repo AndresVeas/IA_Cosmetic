@@ -107,13 +107,36 @@ def analyze_skin(payload: AnalysisRequest):
         upper_skin = np.array([255, 173, 127], dtype=np.uint8)
         skin_mask = cv2.inRange(img_ycrcb, lower_skin, upper_skin)
         
+        # --- MÁSCARA FACIAL EN ELIPSE MEDIANTE HAAR CASCADE ---
+        # Detectar el rostro para ignorar cabello, orejas, cuello y fondo
+        face_mask = np.zeros((480, 640), dtype=np.uint8)
+        gray_640 = cv2.cvtColor(img_640, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray_640, 1.1, 4)
+        
+        if len(faces) > 0:
+            # Seleccionar la cara más grande detectada en la foto
+            faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
+            fx, fy, fw, fh = faces[0]
+            
+            # Dibujar un óvalo facial principal (excluye orejas y cabello en las sienes)
+            center = (int(fx + fw / 2), int(fy + fh / 2))
+            axes = (int(fw * 0.45), int(fh * 0.55))
+            cv2.ellipse(face_mask, center, axes, 0, 0, 360, 255, -1)
+        else:
+            # Si no se detecta el rostro por condiciones de iluminación, usar una elipse central por defecto
+            cv2.ellipse(face_mask, (320, 240), (180, 220), 0, 0, 360, 255, -1)
+            
+        # Combinar la segmentación de color de piel con el óvalo del rostro
+        valid_skin_mask = cv2.bitwise_and(skin_mask, face_mask)
+        
         # A. Extractor de Manchas (LAB local contrast)
         lab = cv2.cvtColor(img_640, cv2.COLOR_BGR2LAB)
         l_channel, _, _ = cv2.split(lab)
         bg_l = cv2.bilateralFilter(l_channel, 25, 100, 100)
         diff_l = cv2.subtract(bg_l, l_channel)
         _, cv_spots = cv2.threshold(diff_l, 10, 255, cv2.THRESH_BINARY)
-        cv_spots = cv2.bitwise_and(cv_spots, skin_mask)
+        cv_spots = cv2.bitwise_and(cv_spots, valid_skin_mask)
         
         # B. Extractor de Arrugas finas (Black-Hat Morphological filter)
         gray = cv2.cvtColor(img_640, cv2.COLOR_BGR2GRAY)
@@ -121,7 +144,7 @@ def analyze_skin(payload: AnalysisRequest):
         kernel_wrinkles = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
         blackhat_wrinkles = cv2.morphologyEx(smoothed, cv2.MORPH_BLACKHAT, kernel_wrinkles)
         _, cv_wrinkles = cv2.threshold(blackhat_wrinkles, 4, 255, cv2.THRESH_BINARY)
-        cv_wrinkles = cv2.bitwise_and(cv_wrinkles, skin_mask)
+        cv_wrinkles = cv2.bitwise_and(cv_wrinkles, valid_skin_mask)
         
         # C. Extractor de Acné (Rojeces + Manchas oscuras pequeñas/acné grisáceo)
         _, cr_channel, _ = cv2.split(img_ycrcb)
@@ -134,7 +157,7 @@ def analyze_skin(payload: AnalysisRequest):
         _, cv_acne_dull = cv2.threshold(blackhat_acne, 6, 255, cv2.THRESH_BINARY)
         
         cv_acne = cv2.bitwise_or(cv_acne_red, cv_acne_dull)
-        cv_acne = cv2.bitwise_and(cv_acne, skin_mask)
+        cv_acne = cv2.bitwise_and(cv_acne, valid_skin_mask)
         
         visual_overlay = []
         anomalies_detected = set()
