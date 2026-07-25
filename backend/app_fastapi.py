@@ -27,20 +27,47 @@ ort_session = None
 def load_model():
     global ort_session
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, "best_model_iou.onnx")
+    model_path = os.path.join(base_dir, "assemble_super.onnx")
     if not os.path.exists(model_path):
-        model_path = os.path.join(base_dir, "assemble_super.onnx")
+        model_path = os.path.join(base_dir, "best_model_iou.onnx")
     if not os.path.exists(model_path):
         print(f"[!] ADVERTENCIA: No se encontró ningún modelo ONNX en el directorio. La inferencia fallará hasta que esté presente.")
         return
 
     try:
-        print(f"Cargando modelo ONNX desde '{model_path}' en CPU...")
+        print(f"Cargando modelo ONNX definitivo 'assemble_super.onnx' desde '{model_path}' en CPU...")
         # Carga el modelo optimizado utilizando el proveedor de CPU para inferencia ultra-rápida y ligera
         ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
-        print("¡Modelo ONNX cargado en memoria exitosamente y listo para inferencias!")
+        print("¡Modelo assemble_super.onnx cargado en memoria exitosamente y listo para inferencias!")
     except Exception as e:
         print(f"Error crítico al cargar el modelo ONNX: {str(e)}")
+
+def preprocess_pass_arrugas(img_rgb: np.ndarray) -> np.ndarray:
+    """PASADA 1: Enfoque de alta frecuencia y realce de sombras finas de arrugas."""
+    img_dark = cv2.convertScaleAbs(img_rgb, alpha=0.88, beta=0)
+    lab = cv2.cvtColor(img_dark, cv2.COLOR_RGB2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=4.5, tileGridSize=(8, 8))
+    img_contrast = cv2.cvtColor(cv2.merge((clahe.apply(l), a, b)), cv2.COLOR_LAB2RGB)
+    kernel_sharp = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
+    return np.clip(cv2.filter2D(img_contrast, -1, kernel_sharp), 0, 255).astype(np.uint8)
+
+def preprocess_pass_acne(img_rgb: np.ndarray) -> np.ndarray:
+    """PASADA 2: Aislamiento de brotes eritematosos (+saturación HSV, +canal a* LAB)."""
+    hsv = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV).astype(np.float32)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.60, 0, 255)
+    img_sat = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
+    lab = cv2.cvtColor(img_sat, cv2.COLOR_RGB2LAB).astype(np.float32)
+    lab[:, :, 1] = np.clip(lab[:, :, 1] * 1.25, 0, 255)
+    return cv2.cvtColor(lab.astype(np.uint8), cv2.COLOR_LAB2RGB)
+
+def preprocess_pass_manchas(img_rgb: np.ndarray) -> np.ndarray:
+    """PASADA 3: Exposición reducida (0.75) y contraste adaptativo de manchas melánicas."""
+    img_dark = cv2.convertScaleAbs(img_rgb, alpha=0.75, beta=0)
+    lab = cv2.cvtColor(img_dark, cv2.COLOR_RGB2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+    return cv2.cvtColor(cv2.merge((clahe.apply(l), a, b)), cv2.COLOR_LAB2RGB)
 
 class AnalysisRequest(BaseModel):
     image: str  # Base64 string
@@ -69,9 +96,13 @@ def analyze_skin(payload: AnalysisRequest):
             
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        # 2. Preprocesar: Obtener dimensiones originales de la imagen
+        # 2. Estandarizar la imagen recibida a la resolución nativa 512x512 del dataset de la U-Net
+        # Esto garantiza que fotos de celulares (1080p, 4K) tengan exactamente la misma escala de arrugas/manchas que el entrenamiento.
         h_orig, w_orig = img_rgb.shape[:2]
-        
+        if h_orig != 512 or w_orig != 512:
+            img_rgb = cv2.resize(img_rgb, (512, 512), interpolation=cv2.INTER_AREA if (h_orig > 512) else cv2.INTER_CUBIC)
+            h_orig, w_orig = 512, 512
+
         # Delimitar la región del rostro alineada al marco 1:1 (~92-96% del encuadre)
         min_x_f = int(w_orig * 0.04)
         max_x_f = int(w_orig * 0.96)
@@ -81,73 +112,91 @@ def analyze_skin(payload: AnalysisRequest):
         w_face = max_x_f - min_x_f
         h_face = max_y_f - min_y_f
         
-        # Extraer la región del rostro de la imagen original en alta resolución
-        face_img = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
+        # Extraer región facial de la imagen original en alta resolución
+        face_img_raw = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
         
-        # Definir tamaño del parche (65% del ancho/alto de la región facial para simular acercamientos)
+        # Generar las 3 imágenes especializadas para cada pasada
+        face_arrugas = preprocess_pass_arrugas(face_img_raw)
+        face_acne = preprocess_pass_acne(face_img_raw)
+        face_manchas = preprocess_pass_manchas(face_img_raw)
+        
         patch_w = max(10, int(w_face * 0.65))
         patch_h = max(10, int(h_face * 0.65))
         
-        # Offsets en la región facial (2x2 = 4 parches con solapamiento en el centro)
         x_offsets = [0, w_face - patch_w]
         y_offsets = [0, h_face - patch_h]
         
-        patches = []
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         
-        for y in y_offsets:
-            for x in x_offsets:
-                # Extraer parche de la región facial
-                patch = face_img[y : y + patch_h, x : x + patch_w]
-                # Redimensionar a 256x256 (tamaño esperado por la U-Net)
-                patch_resized = cv2.resize(patch, (256, 256), interpolation=cv2.INTER_LINEAR)
-                # Normalizar con estadísticas estándar de ImageNet
-                patch_normalized = (patch_resized / 255.0 - mean) / std
-                patch_tensor = np.transpose(patch_normalized, (2, 0, 1)).astype(np.float32)
-                patches.append(patch_tensor)
-                
-        # Apilar todos los parches en un lote de shape: [4, 3, 256, 256]
-        batch_tensor = np.stack(patches, axis=0)
-        
-        # 3. Correr Inferencia en Batch con ONNX Runtime
+        def build_batch(source_face_img):
+            p_list = []
+            for y in y_offsets:
+                for x in x_offsets:
+                    patch = source_face_img[y : y + patch_h, x : x + patch_w]
+                    patch_resized = cv2.resize(patch, (512, 512), interpolation=cv2.INTER_LINEAR)
+                    patch_norm = (patch_resized / 255.0 - mean) / std
+                    patch_tensor = np.transpose(patch_norm, (2, 0, 1)).astype(np.float32)
+                    p_list.append(patch_tensor)
+            return np.stack(p_list, axis=0)
+
+        # Crear lotes de parches para cada pasada especializada
+        batch_arrugas = build_batch(face_arrugas)
+        batch_acne = build_batch(face_acne)
+        batch_manchas = build_batch(face_manchas)
+
         input_name = ort_session.get_inputs()[0].name
         output_name = ort_session.get_outputs()[0].name
-        raw_outputs = ort_session.run([output_name], {input_name: batch_tensor})
-        batch_logits = raw_outputs[0]  # Shape: [4, 4, 256, 256]
-        
-        # 4. Reconstrucción y Mezcla (Blending) a la resolución de la región facial
-        accum_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
-        accum_count_face = np.zeros((h_face, w_face), dtype=np.float32)
-        
-        # Crear ventana coseno 2D para suavizado de bordes del parche
+
+        # Ejecutar las 3 pasadas dedicadas de inferencia U-Net
+        logits_arrugas = ort_session.run([output_name], {input_name: batch_arrugas})[0]
+        logits_acne = ort_session.run([output_name], {input_name: batch_acne})[0]
+        logits_manchas = ort_session.run([output_name], {input_name: batch_manchas})[0]
+
+        # 4. Reconstrucción y Mezcla de Logits (Blending) a la resolución facial
+        accum_arrugas = np.zeros((h_face, w_face), dtype=np.float32)
+        accum_acne = np.zeros((h_face, w_face), dtype=np.float32)
+        accum_manchas = np.zeros((h_face, w_face), dtype=np.float32)
+        accum_bg = np.zeros((h_face, w_face), dtype=np.float32)
+        accum_count = np.zeros((h_face, w_face), dtype=np.float32)
+
         t_w = np.sin(np.linspace(0, np.pi, patch_w))
         t_h = np.sin(np.linspace(0, np.pi, patch_h))
-        weight_2d = np.outer(t_h, t_w).astype(np.float32)
-        weight_2d = np.maximum(weight_2d, 0.05)  # Evitar división por cero en bordes extremos
-        
+        weight_2d = np.maximum(np.outer(t_h, t_w).astype(np.float32), 0.05)
+
         idx = 0
         for y in y_offsets:
             for x in x_offsets:
-                patch_logits_256 = batch_logits[idx]  # Shape: [4, 256, 256]
+                # Arrugas (Canal 3)
+                l3 = cv2.resize(logits_arrugas[idx, 3], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
+                accum_arrugas[y : y + patch_h, x : x + patch_w] += l3 * weight_2d
                 
-                # Redimensionar logits del parche a su tamaño original en la cara
-                patch_logits_orig = np.zeros((4, patch_h, patch_w), dtype=np.float32)
-                for c in range(4):
-                    patch_logits_orig[c] = cv2.resize(patch_logits_256[c], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
+                # Acné (Canal 1)
+                l1 = cv2.resize(logits_acne[idx, 1], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
+                accum_acne[y : y + patch_h, x : x + patch_w] += l1 * weight_2d
                 
-                # Acumular logits ponderados
-                for c in range(4):
-                    accum_logits_face[c, y : y + patch_h, x : x + patch_w] += patch_logits_orig[c] * weight_2d
-                accum_count_face[y : y + patch_h, x : x + patch_w] += weight_2d
+                # Manchas (Canal 2)
+                l2 = cv2.resize(logits_manchas[idx, 2], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
+                accum_manchas[y : y + patch_h, x : x + patch_w] += l2 * weight_2d
+
+                # Fondo Promedio (Canal 0)
+                bg_avg = (logits_arrugas[idx, 0] + logits_acne[idx, 0] + logits_manchas[idx, 0]) / 3.0
+                l0 = cv2.resize(bg_avg, (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
+                accum_bg[y : y + patch_h, x : x + patch_w] += l0 * weight_2d
+
+                accum_count[y : y + patch_h, x : x + patch_w] += weight_2d
                 idx += 1
-                
-        # Promediar logits solapados en la región facial
-        final_logits_face = accum_logits_face / np.expand_dims(accum_count_face, axis=0)
-        
+
+        counts = np.maximum(accum_count, 1e-5)
+        final_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
+        final_logits_face[0] = (accum_bg / counts) - 4.50  # Compensación del sesgo de fondo
+        final_logits_face[1] = (accum_acne / counts) + 1.20  # Sesgo de sensibilidad Acné
+        final_logits_face[2] = (accum_manchas / counts) + 2.00  # Sesgo de sensibilidad Manchas
+        final_logits_face[3] = (accum_arrugas / counts) + 2.20  # Sesgo de sensibilidad Arrugas
+
         # Reconstruir los logits de la imagen original completa
         final_logits_orig = np.zeros((4, h_orig, w_orig), dtype=np.float32)
-        final_logits_orig[0] = 3.0  # Logit de fondo neutro fuera del área facial
+        final_logits_orig[0] = 2.0  # Logit de fondo neutro fuera del área facial
         final_logits_orig[1:] = -10.0
         
         # Insertar los logits de la cara en sus coordenadas originales
@@ -165,9 +214,9 @@ def analyze_skin(payload: AnalysisRequest):
         # Obtener la predicción de la clase ganadora (argmax)
         prediction_scaled = np.argmax(final_logits_640, axis=0).astype(np.uint8)  # Shape: [480, 640]
         
-        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL ESTÁTICA ---
+        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL 1:1 ---
         face_guide_mask = np.zeros((480, 640), dtype=np.uint8)
-        cv2.ellipse(face_guide_mask, (320, 230), (165, 195), 0, 0, 360, 255, -1)
+        cv2.ellipse(face_guide_mask, (320, 240), (280, 220), 0, 0, 360, 255, -1)
         
         # Todo lo que esté fuera del óvalo facial se fuerza a clase 0 (Fondo/Piel Sana)
         prediction_scaled[face_guide_mask == 0] = 0

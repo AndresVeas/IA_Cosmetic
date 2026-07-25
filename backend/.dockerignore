@@ -11,4 +11,4 @@ build/
 *.tsbuildinfo
 *.onnx
 *.onnx.data
-!best_model_iou.onnx
+!assemble_super.onnx

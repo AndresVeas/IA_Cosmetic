@@ -59,12 +59,29 @@ interface AnalysisResponse {
 
 const anomalyMeta: Record<string, { label: string; tone: string; icon: LucideIcon }> = {
   acne: { label: 'Acné', tone: styles.acne, icon: CircleDot },
-  manchas: { label: 'Hiperpigmentación', tone: styles.spots, icon: SunMedium },
-  arrugas: { label: 'Líneas / arrugas', tone: styles.lines, icon: Waves },
+  manchas: { label: 'Manchas', tone: styles.spots, icon: SunMedium },
+  arrugas: { label: 'Arrugas', tone: styles.lines, icon: Waves },
 };
 
 function getAnomalyMeta(type: string) {
-  return anomalyMeta[type] ?? { label: 'Otra condición', tone: styles.other, icon: ScanFace };
+  if (!type) return { label: 'Imperfección', tone: styles.other, icon: ScanFace };
+  const normalizedKey = type.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+  if (anomalyMeta[normalizedKey]) {
+    return anomalyMeta[normalizedKey];
+  }
+  
+  const formattedLabel = type.charAt(0).toUpperCase() + type.slice(1);
+  return { label: formattedLabel, tone: styles.other, icon: ScanFace };
+}
+
+function formatConditionTag(item: string): string {
+  if (!item) return '';
+  const normalized = item.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (normalized === 'acne') return 'Acné';
+  if (normalized === 'manchas') return 'Manchas';
+  if (normalized === 'arrugas') return 'Arrugas';
+  return item.charAt(0).toUpperCase() + item.slice(1);
 }
 
 function DiagnosisProgress({ analyzed = false }: { analyzed?: boolean }) {
@@ -503,7 +520,9 @@ export default function DiagnosticoPage() {
                   <h3>{product.nombre}</h3>
                   <p>{product.descripcion}</p>
                   <div className={styles.productTags}>
-                    {product.imperfecciones.map((item) => <span key={item}>{getAnomalyMeta(item).label}</span>)}
+                    {product.imperfecciones.filter(Boolean).map((item, idx) => (
+                      <span key={`${item}-${idx}`}>{formatConditionTag(item)}</span>
+                    ))}
                   </div>
                   <strong className={styles.shelfPrice}>${product.precio.toFixed(2)}</strong>
                 </div>
