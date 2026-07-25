@@ -27,7 +27,7 @@ ort_session = None
 def load_model():
     global ort_session
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, "best_model.onnx")
+    model_path = os.path.join(base_dir, "best_model_iou.onnx")
     if not os.path.exists(model_path):
         print(f"[!] ADVERTENCIA: No se encontró '{model_path}' en el directorio. La inferencia fallará hasta que esté presente.")
         return

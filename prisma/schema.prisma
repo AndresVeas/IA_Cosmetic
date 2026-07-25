@@ -8,26 +8,30 @@ datasource db {
 }
 
 model Imperfeccion {
-  id                   String                 @id @default(uuid())
-  nombre               String                 @unique
+  id                    Int                    @id @default(autoincrement())
+  nombre                String                 @unique @db.VarChar(50)
   productoImperfeccion ProductoImperfeccion[]
+
+  @@map("imperfecciones")
 }
 
 model Producto {
-  id                   String                 @id @default(uuid())
-  nombre               String
-  marca                String
-  descripcion          String
-  precio               Float
-  imagenUrl            String
+  id                    Int                    @id @default(autoincrement())
+  nombre                String                 @db.VarChar(100)
+  marca                 String?                @db.VarChar(50)
+  descripcion           String?
+  precio                Decimal?               @db.Decimal(10, 2)
+  imagenUrl             String?                @map("imagen_url")
   productoImperfeccion ProductoImperfeccion[]
+
+  @@map("productos")
 }
 
 model ProductoImperfeccion {
-  productoId     String
-  imperfeccionId String
-  imperfeccion   Imperfeccion @relation(fields: [imperfeccionId], references: [id], onDelete: Cascade)
-  producto       Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId     Int          @map("producto_id")
+  imperfeccionId Int          @map("imperfeccion_id")
+  imperfeccion   Imperfeccion @relation(fields: [imperfeccionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  producto       Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([productoId, imperfeccionId])
   @@map("producto_imperfeccion")

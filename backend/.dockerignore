@@ -9,3 +9,6 @@ venv_wsl/
 out/
 build/
 *.tsbuildinfo
+*.onnx
+*.onnx.data
+!best_model_iou.onnx

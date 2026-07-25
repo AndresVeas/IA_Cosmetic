@@ -20,7 +20,7 @@ export interface SkincareProduct {
   imperfecciones: string[];
 }
 
-// Mock data to fallback in case the Neon database connection fails (e.g. invalid connection string)
+// Mock data to fallback ONLY in case the database connection physically fails
 export const MOCK_PRODUCTS: SkincareProduct[] = [
   {
     id: "mock-niacinamide",
@@ -71,17 +71,28 @@ export const MOCK_PRODUCTS: SkincareProduct[] = [
 
 export async function getProductsByImperfections(anomalies: string[]): Promise<SkincareProduct[]> {
   try {
-    // Attempt database call
-    console.log('Querying database for anomalies:', anomalies);
-    
-    // Find all products that treat any of these imperfections
+    console.log('Querying Neon database for anomalies:', anomalies);
+
+    // Expand search terms to cover variations with/without accents (e.g. 'acne' vs 'Acné')
+    const searchTerms = Array.from(new Set(
+      anomalies.flatMap(a => {
+        const normalized = a.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (normalized === 'acne') return [a, 'acne', 'Acné', 'acné', 'ACNÉ', 'ACNE'];
+        if (normalized === 'manchas') return [a, 'manchas', 'Manchas', 'MANCHAS'];
+        if (normalized === 'arrugas') return [a, 'arrugas', 'Arrugas', 'ARRUGAS'];
+        return [a];
+      })
+    ));
+
+    // Query Neon products matching anomalies
     const products = await prisma.producto.findMany({
       where: {
         productoImperfeccion: {
           some: {
             imperfeccion: {
               nombre: {
-                in: anomalies
+                in: searchTerms,
+                mode: 'insensitive'
               }
             }
           }
@@ -94,31 +105,53 @@ export async function getProductsByImperfections(anomalies: string[]): Promise<S
           }
         }
       }
-    }) as any[];
+    });
 
     if (!products || products.length === 0) {
-      // If db connection succeeded but empty (e.g. not seeded yet), fallback to filtered mocks
+      console.log('No specific matches found for anomalies. Fetching all products from Neon...');
+      const allProducts = await prisma.producto.findMany({
+        include: {
+          productoImperfeccion: {
+            include: {
+              imperfeccion: true
+            }
+          }
+        }
+      });
+
+      if (allProducts && allProducts.length > 0) {
+        return allProducts.map(p => ({
+          id: String(p.id),
+          nombre: p.nombre,
+          marca: p.marca || 'IA_Cosmetic',
+          descripcion: p.descripcion || '',
+          precio: p.precio ? Number(p.precio) : 0,
+          imagenUrl: p.imagenUrl || '/products/default.png',
+          imperfecciones: Array.isArray(p.productoImperfeccion)
+            ? p.productoImperfeccion.map(pi => pi.imperfeccion?.nombre || '')
+            : []
+        }));
+      }
+
       return MOCK_PRODUCTS.filter(p => 
         p.imperfecciones.some(imp => anomalies.includes(imp))
       );
     }
 
-    // Format products to match standard output structure
     return products.map(p => ({
-      id: p.id,
+      id: String(p.id),
       nombre: p.nombre,
-      marca: p.marca,
-      descripcion: p.descripcion,
-      precio: Number(p.precio),
-      imagenUrl: p.imagenUrl,
+      marca: p.marca || 'IA_Cosmetic',
+      descripcion: p.descripcion || '',
+      precio: p.precio ? Number(p.precio) : 0,
+      imagenUrl: p.imagenUrl || '/products/default.png',
       imperfecciones: Array.isArray(p.productoImperfeccion)
-        ? p.productoImperfeccion.map((pi: any) => pi.imperfeccion?.nombre || '')
+        ? p.productoImperfeccion.map(pi => pi.imperfeccion?.nombre || '')
         : []
     }));
 
   } catch (error) {
-    console.warn('Database query failed. Falling back to local mock database. Error details:', error);
-    // Connection string is likely invalid or not setup. Return filtered mock data.
+    console.error('Database query error details:', error);
     return MOCK_PRODUCTS.filter(p => 
       p.imperfecciones.some(imp => anomalies.includes(imp))
     );

@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements_fastapi.txt
 
 # Copiar el código de la aplicación y el modelo de pesos ONNX
 COPY app_fastapi.py .
-COPY best_model.onnx .
+COPY best_model_iou.onnx .
 
 # Exponer el puerto de FastAPI
 EXPOSE 8000

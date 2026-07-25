@@ -3,6 +3,12 @@ import segmentation_models_pytorch as smp
 import sys
 import os
 
+# Configurar codificación UTF-8 para la consola en Windows
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 def main():
     try:
         print("Inicializando arquitectura U-Net con ResNet34...")
@@ -14,50 +20,49 @@ def main():
         )
         
         # Lista de tuplas: (archivo_pth, archivo_onnx_salida)
-        models_to_export = [
-            ("best_model_iou.pth", "best_model_iou.onnx"),
-            ("best_model_loos.pth", "best_model_loss.onnx"),
-            ("best_model.pth", "best_model.onnx"),
-            ("best_model_ensemble.pth", "best_model_ensemble.onnx"),
-            ("assemble_super.pth", "assemble_super.onnx")
-        ]
+        models_to_export = [("best_model_iou.pth", "best_model_iou.onnx")]
         
         # Generar tensor dummy de entrada (1x3x256x256)
-        # Usamos 256x256 como resolución estándar para una inferencia ultra-rápida en CPU
         dummy_input = torch.randn(1, 3, 256, 256)
         
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
         for pth_name, onnx_name in models_to_export:
-            if not os.path.exists(pth_name):
-                print(f"[!] ADVERTENCIA: No se encontró '{pth_name}', omitiendo...")
+            pth_path = os.path.join(base_dir, pth_name)
+            onnx_path = os.path.join(base_dir, onnx_name)
+
+            if not os.path.exists(pth_path):
+                print(f"[!] ADVERTENCIA: No se encontro '{pth_name}' en '{base_dir}', omitiendo...")
                 continue
                 
             # Si el archivo ONNX ya existe y es más nuevo que el archivo .pth, omitimos
-            if os.path.exists(onnx_name) and os.path.getmtime(onnx_name) > os.path.getmtime(pth_name):
-                print(f"---> '{onnx_name}' ya está actualizado, omitiendo exportación.")
+            if os.path.exists(onnx_path) and os.path.getmtime(onnx_path) > os.path.getmtime(pth_path):
+                print(f"---> '{onnx_name}' ya esta actualizado, omitiendo exportacion.")
                 continue
                 
             print(f"\n---> Cargando pesos de '{pth_name}'...")
-            model.load_state_dict(torch.load(pth_name, map_location="cpu"))
+            model.load_state_dict(torch.load(pth_path, map_location="cpu"))
             model.eval()
             
             print(f"---> Exportando modelo a '{onnx_name}'...")
             torch.onnx.export(
                 model,
                 dummy_input,
-                onnx_name,
+                onnx_path,
                 export_params=True,
-                opset_version=11,
+                opset_version=14,
                 do_constant_folding=True,
                 input_names=["input"],
                 output_names=["output"],
-                dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}}
+                dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+                dynamo=False
             )
-            print(f"¡Éxito! El modelo se ha guardado en '{onnx_name}'")
+            print(f"[+] Exito! El modelo se ha guardado en '{onnx_path}'")
             
         print("\n[+] Todos los modelos disponibles han sido procesados y exportados a ONNX.")
         
     except Exception as e:
-        print(f"Error durante la exportación a ONNX: {str(e)}", file=sys.stderr)
+        print(f"Error durante la exportacion a ONNX: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
