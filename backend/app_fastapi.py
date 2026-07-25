@@ -29,7 +29,9 @@ def load_model():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(base_dir, "best_model_iou.onnx")
     if not os.path.exists(model_path):
-        print(f"[!] ADVERTENCIA: No se encontró '{model_path}' en el directorio. La inferencia fallará hasta que esté presente.")
+        model_path = os.path.join(base_dir, "assemble_super.onnx")
+    if not os.path.exists(model_path):
+        print(f"[!] ADVERTENCIA: No se encontró ningún modelo ONNX en el directorio. La inferencia fallará hasta que esté presente.")
         return
 
     try:
@@ -66,15 +68,15 @@ def analyze_skin(payload: AnalysisRequest):
             raise ValueError("No se pudo decodificar la imagen recibida.")
             
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
+
         # 2. Preprocesar: Obtener dimensiones originales de la imagen
         h_orig, w_orig = img_rgb.shape[:2]
         
-        # Delimitar la región del rostro en base al óvalo de la guía visual (en escala 640x480 es X:155-485, Y:35-425)
-        min_x_f = int(w_orig * (155 / 640))
-        max_x_f = int(w_orig * (485 / 640))
-        min_y_f = int(h_orig * (35 / 480))
-        max_y_f = int(h_orig * (425 / 480))
+        # Delimitar la región del rostro alineada al marco 1:1 (~92-96% del encuadre)
+        min_x_f = int(w_orig * 0.04)
+        max_x_f = int(w_orig * 0.96)
+        min_y_f = int(h_orig * 0.04)
+        max_y_f = int(h_orig * 0.96)
         
         w_face = max_x_f - min_x_f
         h_face = max_y_f - min_y_f
@@ -82,9 +84,9 @@ def analyze_skin(payload: AnalysisRequest):
         # Extraer la región del rostro de la imagen original en alta resolución
         face_img = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
         
-        # Definir tamaño del parche (65% del ancho/alto de la región facial para simular acercamientos de sienes y mejillas)
-        patch_w = int(w_face * 0.65)
-        patch_h = int(h_face * 0.65)
+        # Definir tamaño del parche (65% del ancho/alto de la región facial para simular acercamientos)
+        patch_w = max(10, int(w_face * 0.65))
+        patch_h = max(10, int(h_face * 0.65))
         
         # Offsets en la región facial (2x2 = 4 parches con solapamiento en el centro)
         x_offsets = [0, w_face - patch_w]
@@ -100,7 +102,7 @@ def analyze_skin(payload: AnalysisRequest):
                 patch = face_img[y : y + patch_h, x : x + patch_w]
                 # Redimensionar a 256x256 (tamaño esperado por la U-Net)
                 patch_resized = cv2.resize(patch, (256, 256), interpolation=cv2.INTER_LINEAR)
-                # Normalizar
+                # Normalizar con estadísticas estándar de ImageNet
                 patch_normalized = (patch_resized / 255.0 - mean) / std
                 patch_tensor = np.transpose(patch_normalized, (2, 0, 1)).astype(np.float32)
                 patches.append(patch_tensor)
@@ -143,9 +145,10 @@ def analyze_skin(payload: AnalysisRequest):
         # Promediar logits solapados en la región facial
         final_logits_face = accum_logits_face / np.expand_dims(accum_count_face, axis=0)
         
-        # Reconstruir los logits de la imagen original completa (llenando el resto con fondo)
-        final_logits_orig = np.full((4, h_orig, w_orig), -100.0, dtype=np.float32)
-        final_logits_orig[0] = 10.0  # Fondo/Piel sana por defecto
+        # Reconstruir los logits de la imagen original completa
+        final_logits_orig = np.zeros((4, h_orig, w_orig), dtype=np.float32)
+        final_logits_orig[0] = 3.0  # Logit de fondo neutro fuera del área facial
+        final_logits_orig[1:] = -10.0
         
         # Insertar los logits de la cara en sus coordenadas originales
         final_logits_orig[:, min_y_f : max_y_f, min_x_f : max_x_f] = final_logits_face
@@ -154,7 +157,7 @@ def analyze_skin(payload: AnalysisRequest):
         final_logits_640 = np.zeros((4, 480, 640), dtype=np.float32)
         for c in range(4):
             final_logits_640[c] = cv2.resize(final_logits_orig[c], (640, 480), interpolation=cv2.INTER_LINEAR)
-            
+
         # Calcular softmax para obtener probabilidades de confianza por píxel a 640x480
         logits_exp = np.exp(final_logits_640 - np.max(final_logits_640, axis=0, keepdims=True))
         probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)  # Shape: [4, 480, 640]
@@ -189,6 +192,11 @@ def analyze_skin(payload: AnalysisRequest):
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
+            # Si es la clase Manchas (2), aplicar cierre morfológico para unir zonas hiperpigmentadas discontinuas
+            if class_id == 2:
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+                class_mask = cv2.morphologyEx(class_mask, cv2.MORPH_CLOSE, kernel)
+
             # Pintar la máscara correspondiente a este canal en el overlay
             overlay_mask[class_mask == 1] = color_map[class_id]
             
@@ -202,8 +210,8 @@ def analyze_skin(payload: AnalysisRequest):
             class_overlays = []
             for i, cnt in enumerate(contours):
                 area = cv2.contourArea(cnt)
-                # Omitir ruidos extremadamente pequeños (menos de 8 píxeles en resolución 640x480)
-                if area < 8:
+                # Omitir ruidos insignificantes (< 3px) para capturar hasta las más pequeñas imperfecciones
+                if area < 3:
                     continue
                 
                 # Calcular la confianza/intensidad media de los píxeles de este contorno

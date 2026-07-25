@@ -122,11 +122,16 @@ export default function DiagnosticoPage() {
       let mediaStream: MediaStream;
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: {
+            facingMode: 'user',
+            aspectRatio: { ideal: 1 },
+            width: { ideal: 1080 },
+            height: { ideal: 1080 },
+          },
           audio: false,
         });
       } catch (firstErr: unknown) {
-        console.warn('Could not start camera with HD constraints. Falling back to default constraints.', firstErr);
+        console.warn('Could not start camera with 1:1 constraints. Falling back to default constraints.', firstErr);
         mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
       }
 
@@ -180,16 +185,25 @@ export default function DiagnosticoPage() {
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
+    const vWidth = video.videoWidth || 1080;
+    const vHeight = video.videoHeight || 1080;
+    
+    // Crop central 1:1 square from video feed
+    const size = Math.min(vWidth, vHeight);
+    const startX = (vWidth - size) / 2;
+    const startY = (vHeight - size) / 2;
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1920;
-    canvas.height = video.videoHeight || 1080;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    
     if (isMirrored) {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     setCapturedImage(dataUrl);
