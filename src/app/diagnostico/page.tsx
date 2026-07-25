@@ -482,7 +482,7 @@ export default function DiagnosticoPage() {
             {results.products.map((product) => (
               <article className={styles.shelfProductCard} key={product.id}>
                 <div className={styles.shelfProductImage}>
-                  <Image src={product.imagenUrl} alt={product.nombre} width={130} height={150} />
+                  <ProductImage src={product.imagenUrl} alt={product.nombre} />
                 </div>
                 <div className={styles.productCopy}>
                   <span>{product.marca}</span>
@@ -499,5 +499,48 @@ export default function DiagnosticoPage() {
         </section>
       )}
     </main>
+  );
+}
+
+function ProductImage({ src, alt }: { src: string; alt: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError || !src) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        padding: '12px',
+        textAlign: 'center',
+        background: 'linear-gradient(135deg, #fbf7f4 0%, #f1e6df 100%)',
+        color: '#9c7b75'
+      }}>
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '6px', opacity: 0.8 }}>
+          <path d="M12 2v4" />
+          <path d="M7 6h10a1 1 0 0 1 1 1v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z" />
+          <path d="M10 12h4" />
+        </svg>
+        <span style={{ fontSize: '11px', fontWeight: 600, opacity: 0.9, lineHeight: 1.2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{alt}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      referrerPolicy="no-referrer"
+      onError={() => setHasError(true)}
+      style={{
+        width: '100%',
+        height: '100%',
+        maxHeight: '170px',
+        objectFit: 'contain'
+      }}
+    />
   );
 }
