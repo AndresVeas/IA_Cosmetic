@@ -338,6 +338,7 @@ export default function DiagnosticoPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={capturedImage} alt="Rostro capturado para el análisis" className={styles.media} />
                   
+                  {/* 1. Máscara coloreada de segmentación (se desvela al presionar el botón) */}
                   {showMask && results?.maskImage && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -348,7 +349,8 @@ export default function DiagnosticoPage() {
                     />
                   )}
 
-                  {showMask && results?.visualOverlay.map((overlay, index) => {
+                  {/* 2. Círculos/Puntos numerados (visibles por defecto, desaparecen al desvelar la máscara) */}
+                  {!showMask && results?.visualOverlay.map((overlay, index) => {
                     const meta = getAnomalyMeta(overlay.type);
                     return (
                       <div
@@ -383,8 +385,8 @@ export default function DiagnosticoPage() {
                     <button
                       className={`${styles.maskToggleButton} ${showMask ? styles.maskToggleButtonActive : ''}`}
                       onClick={() => setShowMask(!showMask)}
-                      aria-label="Alternar máscara de segmentación"
-                      title={showMask ? "Ocultar máscara U-Net" : "Mostrar máscara U-Net"}
+                      aria-label="Alternar vista entre puntos y máscara"
+                      title={showMask ? "Ver marcadores de puntos" : "Desvelar máscara coloreada U-Net"}
                     >
                       {showMask ? <EyeOff /> : <Eye />}
                     </button>
