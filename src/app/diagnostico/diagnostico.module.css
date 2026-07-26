@@ -267,6 +267,61 @@
   transform: translateY(-2px);
 }
 
+.mirrorButton {
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  left: 18px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--plum);
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mirrorButton:hover {
+  background: white;
+  transform: translateY(-2px);
+}
+
+.zoomButton {
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  right: 18px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--plum);
+  background: rgb(255 255 255 / 85%);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-metric);
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zoomButton:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(88 30 46 / 15%);
+}
+
+.zoomButton svg {
+  width: 16px;
+  height: 16px;
+}
+
 .maskToggleButtonActive {
   color: white !important;
   background: var(--mauve) !important;

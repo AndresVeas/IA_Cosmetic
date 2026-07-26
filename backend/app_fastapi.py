@@ -43,30 +43,25 @@ def load_model():
         print(f"Error crítico al cargar el modelo ONNX: {str(e)}")
 
 def preprocess_pass_arrugas(img_rgb: np.ndarray) -> np.ndarray:
-    """PASADA 1: Enfoque de alta frecuencia y realce de sombras finas de arrugas."""
-    img_dark = cv2.convertScaleAbs(img_rgb, alpha=0.88, beta=0)
+    """PASADA 1: Enfoque suave de arrugas (CLAHE 2.0 en LAB sin artefactos de bordes)."""
+    img_dark = cv2.convertScaleAbs(img_rgb, alpha=0.92, beta=0)
     lab = cv2.cvtColor(img_dark, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=4.5, tileGridSize=(8, 8))
-    img_contrast = cv2.cvtColor(cv2.merge((clahe.apply(l), a, b)), cv2.COLOR_LAB2RGB)
-    kernel_sharp = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
-    return np.clip(cv2.filter2D(img_contrast, -1, kernel_sharp), 0, 255).astype(np.uint8)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    return cv2.cvtColor(cv2.merge((clahe.apply(l), a, b)), cv2.COLOR_LAB2RGB)
 
 def preprocess_pass_acne(img_rgb: np.ndarray) -> np.ndarray:
-    """PASADA 2: Aislamiento de brotes eritematosos (+saturación HSV, +canal a* LAB)."""
+    """PASADA 2: Aislamiento eritematoso moderado (+25% saturación HSV)."""
     hsv = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV).astype(np.float32)
-    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.60, 0, 255)
-    img_sat = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
-    lab = cv2.cvtColor(img_sat, cv2.COLOR_RGB2LAB).astype(np.float32)
-    lab[:, :, 1] = np.clip(lab[:, :, 1] * 1.25, 0, 255)
-    return cv2.cvtColor(lab.astype(np.uint8), cv2.COLOR_LAB2RGB)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.25, 0, 255)
+    return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
 
 def preprocess_pass_manchas(img_rgb: np.ndarray) -> np.ndarray:
-    """PASADA 3: Exposición reducida (0.75) y contraste adaptativo de manchas melánicas."""
-    img_dark = cv2.convertScaleAbs(img_rgb, alpha=0.75, beta=0)
+    """PASADA 3: Exposición equilibrada (0.85) y CLAHE moderado (2.2)."""
+    img_dark = cv2.convertScaleAbs(img_rgb, alpha=0.85, beta=0)
     lab = cv2.cvtColor(img_dark, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=2.2, tileGridSize=(8, 8))
     return cv2.cvtColor(cv2.merge((clahe.apply(l), a, b)), cv2.COLOR_LAB2RGB)
 
 class AnalysisRequest(BaseModel):
@@ -189,10 +184,10 @@ def analyze_skin(payload: AnalysisRequest):
 
         counts = np.maximum(accum_count, 1e-5)
         final_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
-        final_logits_face[0] = (accum_bg / counts) - 4.50  # Compensación del sesgo de fondo
-        final_logits_face[1] = (accum_acne / counts) + 1.20  # Sesgo de sensibilidad Acné
-        final_logits_face[2] = (accum_manchas / counts) + 2.00  # Sesgo de sensibilidad Manchas
-        final_logits_face[3] = (accum_arrugas / counts) + 2.20  # Sesgo de sensibilidad Arrugas
+        final_logits_face[0] = accum_bg / counts  # Fondo/Piel Sana equilibrado
+        final_logits_face[1] = (accum_acne / counts) + 0.10  # Sensibilidad equilibrada Acné
+        final_logits_face[2] = (accum_manchas / counts) + 0.15  # Sensibilidad equilibrada Manchas
+        final_logits_face[3] = (accum_arrugas / counts) + 0.15  # Sensibilidad equilibrada Arrugas
 
         # Reconstruir los logits de la imagen original completa
         final_logits_orig = np.zeros((4, h_orig, w_orig), dtype=np.float32)
@@ -241,10 +236,12 @@ def analyze_skin(payload: AnalysisRequest):
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
-            # Si es la clase Manchas (2), aplicar cierre morfológico para unir zonas hiperpigmentadas discontinuas
-            if class_id == 2:
-                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-                class_mask = cv2.morphologyEx(class_mask, cv2.MORPH_CLOSE, kernel)
+            # Descartar píxeles con confianza de probabilidad menor al 38% para evitar manchas invasivas sobre orejas, cabello y mentón
+            class_mask[probs[class_id] < 0.38] = 0
+
+            # Aplicar Apertura Morfológica (MORPH_OPEN) para limpiar hebras de cabello, contornos de oreja y artefactos delgados
+            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            class_mask = cv2.morphologyEx(class_mask, cv2.MORPH_OPEN, kernel_open)
 
             # Pintar la máscara correspondiente a este canal en el overlay
             overlay_mask[class_mask == 1] = color_map[class_id]
@@ -259,8 +256,8 @@ def analyze_skin(payload: AnalysisRequest):
             class_overlays = []
             for i, cnt in enumerate(contours):
                 area = cv2.contourArea(cnt)
-                # Omitir ruidos insignificantes (< 3px) para capturar hasta las más pequeñas imperfecciones
-                if area < 3:
+                # Omitir ruidos o artefactos pequeños (< 25px)
+                if area < 25:
                     continue
                 
                 # Calcular la confianza/intensidad media de los píxeles de este contorno

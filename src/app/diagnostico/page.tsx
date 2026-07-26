@@ -25,6 +25,7 @@ import {
   SunMedium,
   Upload,
   Waves,
+  ZoomIn,
 } from 'lucide-react';
 import styles from './diagnostico.module.css';
 
@@ -123,6 +124,7 @@ export default function DiagnosticoPage() {
   const [results, setResults] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMirrored, setIsMirrored] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(1.65);
   const [showMask, setShowMask] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -205,14 +207,15 @@ export default function DiagnosticoPage() {
     const vWidth = video.videoWidth || 1080;
     const vHeight = video.videoHeight || 1080;
     
-    // Crop central 1:1 square from video feed
-    const size = Math.min(vWidth, vHeight);
-    const startX = (vWidth - size) / 2;
-    const startY = (vHeight - size) / 2;
+    // Recorte del cuadrado central 1:1 aplicando el Zoom Facial seleccionado
+    const baseSize = Math.min(vWidth, vHeight);
+    const zoomedSize = baseSize / zoomLevel;
+    const startX = (vWidth - zoomedSize) / 2;
+    const startY = (vHeight - zoomedSize) / 2;
 
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = 1080;
+    canvas.height = 1080;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
@@ -220,7 +223,7 @@ export default function DiagnosticoPage() {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+    ctx.drawImage(video, startX, startY, zoomedSize, zoomedSize, 0, 0, 1080, 1080);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     setCapturedImage(dataUrl);
@@ -305,10 +308,19 @@ export default function DiagnosticoPage() {
                       if (element && stream) element.srcObject = stream;
                     }}
                     autoPlay playsInline muted
-                    className={`${styles.media} ${isMirrored ? styles.mirrored : ''}`}
+                    className={`${styles.media}`}
+                    style={{ transform: `${isMirrored ? 'scaleX(-1)' : ''} scale(${zoomLevel})` }}
                   />
-                  <button className={styles.mirrorButton} onClick={() => setIsMirrored(!isMirrored)} aria-label="Alternar imagen espejo">
+                  <button className={styles.mirrorButton} onClick={() => setIsMirrored(!isMirrored)} aria-label="Alternar imagen espejo" title="Espejo">
                     <FlipHorizontal />
+                  </button>
+                  <button
+                    className={styles.zoomButton}
+                    onClick={() => setZoomLevel((prev) => (prev >= 1.8 ? 1.0 : prev === 1.0 ? 1.35 : 1.65))}
+                    aria-label="Cambiar zoom de la cámara"
+                    title="Zoom Facial"
+                  >
+                    <ZoomIn /> {zoomLevel.toFixed(2)}x
                   </button>
                   <div className={styles.faceGuide} aria-hidden="true">
                     <span className={styles.guideVertical} />
