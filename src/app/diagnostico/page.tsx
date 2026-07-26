@@ -356,7 +356,7 @@ export default function DiagnosticoPage() {
                       <div
                         key={`${overlay.type}-${index}`}
                         className={`${styles.marker} ${meta.tone}`}
-                        style={{ left: `${(overlay.x / 640) * 100}%`, top: `${(overlay.y / 480) * 100}%`, zIndex: 4 }}
+                        style={{ left: `${(overlay.x / 512) * 100}%`, top: `${(overlay.y / 512) * 100}%`, zIndex: 4 }}
                         tabIndex={0}
                         aria-label={`${meta.label}: ${overlay.label}`}
                       >

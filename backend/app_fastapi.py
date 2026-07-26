@@ -110,14 +110,21 @@ def analyze_skin(payload: AnalysisRequest):
         # Extraer región facial de la imagen original en alta resolución
         face_img_raw = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
         
-        # --- MODO U-NET DIRECTO PURO (SIN PREPROCESAMIENTO NI MULTI-PASADAS) ---
+        # --- MODO U-NET DIRECTO PURO (SIN MULTI-PASADAS) ---
         # 1. Redimensionar la imagen limpia del rostro a 512x512 (resolución nativa U-Net)
         face_512 = cv2.resize(face_img_raw, (512, 512), interpolation=cv2.INTER_CUBIC)
-        
-        # 2. Normalización estándar ImageNet (sin filtros de contraste, saturación ni 3 pasadas)
+
+        # 2. Ecualización de contraste CLAHE en canal L (LAB) para mejorar detección en webcam
+        lab = cv2.cvtColor(face_512, cv2.COLOR_RGB2LAB)
+        l_ch, a_ch, b_ch = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=1.8, tileGridSize=(8, 8))
+        l_eq = clahe.apply(l_ch)
+        face_512_eq = cv2.cvtColor(cv2.merge((l_eq, a_ch, b_ch)), cv2.COLOR_LAB2RGB)
+
+        # 3. Normalización estándar ImageNet sobre la imagen ecualizada
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        face_norm = (face_512 / 255.0 - mean) / std
+        face_norm = (face_512_eq / 255.0 - mean) / std
         face_tensor = np.transpose(face_norm, (2, 0, 1)).astype(np.float32)
         batch_pure = np.expand_dims(face_tensor, axis=0)  # Shape: [1, 3, 512, 512]
 
@@ -127,52 +134,30 @@ def analyze_skin(payload: AnalysisRequest):
         # 3. Una sola pasada limpia y directa con la U-Net (assemble_super.onnx)
         raw_logits_512 = ort_session.run([output_name], {input_name: batch_pure})[0][0]  # Shape: [4, 512, 512]
 
-        # Redimensionar logits de 512x512 a las dimensiones de la región facial
+        # Reconstruir los logits en la imagen completa de 512x512
+        final_logits = np.zeros((4, 512, 512), dtype=np.float32)
+        final_logits[0] = 2.0  # Logit de fondo neutro fuera del área facial
+        final_logits[1:] = -10.0
+
+        # Redimensionar logits de la inferencia al tamaño de la región facial recortada
         final_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
         for c in range(4):
             final_logits_face[c] = cv2.resize(raw_logits_512[c], (w_face, h_face), interpolation=cv2.INTER_LINEAR)
 
-        """
-        # --- CÓDIGO ANTERIOR DE PREPROCESAMIENTO Y 3 PASADAS (COMENTADO) ---
-        face_arrugas = preprocess_pass_arrugas(face_img_raw)
-        face_acne = preprocess_pass_acne(face_img_raw)
-        face_manchas = preprocess_pass_manchas(face_img_raw)
-        
-        patch_w = max(10, int(w_face * 0.65))
-        patch_h = max(10, int(h_face * 0.65))
-        x_offsets = [0, w_face - patch_w]
-        y_offsets = [0, h_face - patch_h]
-        
-        batch_arrugas = build_batch(face_arrugas)
-        batch_acne = build_batch(face_acne)
-        batch_manchas = build_batch(face_manchas)
-        ...
-        """
+        # Insertar los logits de la cara en sus coordenadas originales dentro del canvas 512x512
+        final_logits[:, min_y_f : max_y_f, min_x_f : max_x_f] = final_logits_face
 
-        # Reconstruir los logits de la imagen original completa
-        final_logits_orig = np.zeros((4, h_orig, w_orig), dtype=np.float32)
-        final_logits_orig[0] = 2.0  # Logit de fondo neutro fuera del área facial
-        final_logits_orig[1:] = -10.0
-        
-        # Insertar los logits de la cara en sus coordenadas originales
-        final_logits_orig[:, min_y_f : max_y_f, min_x_f : max_x_f] = final_logits_face
-        
-        # Redimensionar logits globales a 640x480 para el frontend
-        final_logits_640 = np.zeros((4, 480, 640), dtype=np.float32)
-        for c in range(4):
-            final_logits_640[c] = cv2.resize(final_logits_orig[c], (640, 480), interpolation=cv2.INTER_LINEAR)
+        # Calcular softmax para obtener probabilidades de confianza por píxel a 512x512
+        logits_exp = np.exp(final_logits - np.max(final_logits, axis=0, keepdims=True))
+        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)  # Shape: [4, 512, 512]
 
-        # Calcular softmax para obtener probabilidades de confianza por píxel a 640x480
-        logits_exp = np.exp(final_logits_640 - np.max(final_logits_640, axis=0, keepdims=True))
-        probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)  # Shape: [4, 480, 640]
-        
         # Obtener la predicción de la clase ganadora (argmax)
-        prediction_scaled = np.argmax(final_logits_640, axis=0).astype(np.uint8)  # Shape: [480, 640]
+        prediction_scaled = np.argmax(final_logits, axis=0).astype(np.uint8)  # Shape: [512, 512]
         
-        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL 1:1 ---
-        face_guide_mask = np.zeros((480, 640), dtype=np.uint8)
-        cv2.ellipse(face_guide_mask, (320, 240), (280, 220), 0, 0, 360, 255, -1)
-        
+        # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL (512x512) ---
+        face_guide_mask = np.zeros((512, 512), dtype=np.uint8)
+        cv2.ellipse(face_guide_mask, (256, 256), (230, 210), 0, 0, 360, 255, -1)
+
         # Todo lo que esté fuera del óvalo facial se fuerza a clase 0 (Fondo/Piel Sana)
         prediction_scaled[face_guide_mask == 0] = 0
         for c in range(1, 4):
@@ -185,7 +170,7 @@ def analyze_skin(payload: AnalysisRequest):
         labels_map = {1: "Acné", 2: "Hiperpigmentación", 3: "Línea/Arruga"}
         
         # Generar la máscara de segmentación en formato RGBA (base64)
-        overlay_mask = np.zeros((480, 640, 4), dtype=np.uint8)
+        overlay_mask = np.zeros((512, 512, 4), dtype=np.uint8)
         
         color_map = {
             1: [115, 111, 231, 140],  # acne
@@ -196,8 +181,8 @@ def analyze_skin(payload: AnalysisRequest):
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
-            # Descartar píxeles con confianza de probabilidad menor al 38% para evitar manchas invasivas sobre orejas, cabello y mentón
-            class_mask[probs[class_id] < 0.38] = 0
+            # Descartar píxeles con confianza de probabilidad menor al 22% para mejorar sensibilidad
+            class_mask[probs[class_id] < 0.22] = 0
 
             # Aplicar Apertura Morfológica (MORPH_OPEN) para limpiar hebras de cabello, contornos de oreja y artefactos delgados
             kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -206,9 +191,9 @@ def analyze_skin(payload: AnalysisRequest):
             # Pintar la máscara correspondiente a este canal en el overlay
             overlay_mask[class_mask == 1] = color_map[class_id]
             
-            # Contar píxeles activos en la resolución 640x480
+            # Contar píxeles activos en la resolución 512x512
             active_pixels = np.sum(class_mask)
-            print(f"[DEBUG] Clase {class_name.upper()} (U-Net Patches): {active_pixels} píxeles")
+            print(f"[DEBUG] Clase {class_name.upper()} (512x512): {active_pixels} píxeles")
             
             # Encontrar contornos sobre la máscara final
             contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -216,8 +201,8 @@ def analyze_skin(payload: AnalysisRequest):
             class_overlays = []
             for i, cnt in enumerate(contours):
                 area = cv2.contourArea(cnt)
-                # Omitir ruidos o artefactos pequeños (< 25px)
-                if area < 25:
+                # Omitir ruidos o artefactos pequeños (< 15px)
+                if area < 15:
                     continue
                 
                 # Calcular la confianza/intensidad media de los píxeles de este contorno
