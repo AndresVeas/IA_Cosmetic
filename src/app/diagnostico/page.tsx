@@ -348,7 +348,7 @@ export default function DiagnosticoPage() {
                     />
                   )}
 
-                  {results?.visualOverlay.map((overlay, index) => {
+                  {showMask && results?.visualOverlay.map((overlay, index) => {
                     const meta = getAnomalyMeta(overlay.type);
                     return (
                       <div

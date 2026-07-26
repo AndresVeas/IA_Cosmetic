@@ -109,8 +109,8 @@
 .hiddenInput { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .error { margin-top: 16px; padding: 14px 18px; color: #9a3038; background: #fff1f2; border: 1px solid #f1c5c8; border-radius: 14px; font-size: 13px; }
 
-.marker { --marker: #a968a6; position: absolute; z-index: 4; width: 30px; height: 30px; transform: translate(-50%, -50%); display: grid; place-items: center; color: white; background: color-mix(in srgb, var(--marker) 82%, transparent); border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 14px rgb(41 33 38 / 25%), 0 0 0 7px color-mix(in srgb, var(--marker) 20%, transparent); font-family: var(--font-metric); font-size: 11px; font-weight: 700; cursor: help; }
-.markerTooltip { position: absolute; left: 38px; top: 50%; width: max-content; max-width: 200px; padding: 8px 10px; color: white; background: var(--ink); border-radius: 8px; transform: translateY(-50%) scale(.9); transform-origin: left; opacity: 0; pointer-events: none; font-size: 10px; font-weight: 400; }
+.marker { --marker: #a968a6; position: absolute; z-index: 4; width: 22px; height: 22px; transform: translate(-50%, -50%); display: grid; place-items: center; color: white; background: color-mix(in srgb, var(--marker) 88%, transparent); border: 1.5px solid white; border-radius: 50%; box-shadow: 0 3px 10px rgb(41 33 38 / 25%), 0 0 0 4px color-mix(in srgb, var(--marker) 25%, transparent); font-family: var(--font-metric); font-size: 10px; font-weight: 700; cursor: help; }
+.markerTooltip { position: absolute; left: 28px; top: 50%; width: max-content; max-width: 200px; padding: 8px 10px; color: white; background: var(--ink); border-radius: 8px; transform: translateY(-50%) scale(.9); transform-origin: left; opacity: 0; pointer-events: none; font-size: 10px; font-weight: 400; }
 .marker:hover .markerTooltip, .marker:focus .markerTooltip { opacity: 1; transform: translateY(-50%) scale(1); }
 .acne { --marker: #e76f73; }.spots { --marker: #48a783; }.lines { --marker: #8975e8; }.other { --marker: #a968a6; }
 

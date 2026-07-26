@@ -110,84 +110,44 @@ def analyze_skin(payload: AnalysisRequest):
         # Extraer región facial de la imagen original en alta resolución
         face_img_raw = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
         
-        # Generar las 3 imágenes especializadas para cada pasada
+        # --- MODO U-NET DIRECTO PURO (SIN PREPROCESAMIENTO NI MULTI-PASADAS) ---
+        # 1. Redimensionar la imagen limpia del rostro a 512x512 (resolución nativa U-Net)
+        face_512 = cv2.resize(face_img_raw, (512, 512), interpolation=cv2.INTER_CUBIC)
+        
+        # 2. Normalización estándar ImageNet (sin filtros de contraste, saturación ni 3 pasadas)
+        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        face_norm = (face_512 / 255.0 - mean) / std
+        face_tensor = np.transpose(face_norm, (2, 0, 1)).astype(np.float32)
+        batch_pure = np.expand_dims(face_tensor, axis=0)  # Shape: [1, 3, 512, 512]
+
+        input_name = ort_session.get_inputs()[0].name
+        output_name = ort_session.get_outputs()[0].name
+
+        # 3. Una sola pasada limpia y directa con la U-Net (assemble_super.onnx)
+        raw_logits_512 = ort_session.run([output_name], {input_name: batch_pure})[0][0]  # Shape: [4, 512, 512]
+
+        # Redimensionar logits de 512x512 a las dimensiones de la región facial
+        final_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
+        for c in range(4):
+            final_logits_face[c] = cv2.resize(raw_logits_512[c], (w_face, h_face), interpolation=cv2.INTER_LINEAR)
+
+        """
+        # --- CÓDIGO ANTERIOR DE PREPROCESAMIENTO Y 3 PASADAS (COMENTADO) ---
         face_arrugas = preprocess_pass_arrugas(face_img_raw)
         face_acne = preprocess_pass_acne(face_img_raw)
         face_manchas = preprocess_pass_manchas(face_img_raw)
         
         patch_w = max(10, int(w_face * 0.65))
         patch_h = max(10, int(h_face * 0.65))
-        
         x_offsets = [0, w_face - patch_w]
         y_offsets = [0, h_face - patch_h]
         
-        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        
-        def build_batch(source_face_img):
-            p_list = []
-            for y in y_offsets:
-                for x in x_offsets:
-                    patch = source_face_img[y : y + patch_h, x : x + patch_w]
-                    patch_resized = cv2.resize(patch, (512, 512), interpolation=cv2.INTER_LINEAR)
-                    patch_norm = (patch_resized / 255.0 - mean) / std
-                    patch_tensor = np.transpose(patch_norm, (2, 0, 1)).astype(np.float32)
-                    p_list.append(patch_tensor)
-            return np.stack(p_list, axis=0)
-
-        # Crear lotes de parches para cada pasada especializada
         batch_arrugas = build_batch(face_arrugas)
         batch_acne = build_batch(face_acne)
         batch_manchas = build_batch(face_manchas)
-
-        input_name = ort_session.get_inputs()[0].name
-        output_name = ort_session.get_outputs()[0].name
-
-        # Ejecutar las 3 pasadas dedicadas de inferencia U-Net
-        logits_arrugas = ort_session.run([output_name], {input_name: batch_arrugas})[0]
-        logits_acne = ort_session.run([output_name], {input_name: batch_acne})[0]
-        logits_manchas = ort_session.run([output_name], {input_name: batch_manchas})[0]
-
-        # 4. Reconstrucción y Mezcla de Logits (Blending) a la resolución facial
-        accum_arrugas = np.zeros((h_face, w_face), dtype=np.float32)
-        accum_acne = np.zeros((h_face, w_face), dtype=np.float32)
-        accum_manchas = np.zeros((h_face, w_face), dtype=np.float32)
-        accum_bg = np.zeros((h_face, w_face), dtype=np.float32)
-        accum_count = np.zeros((h_face, w_face), dtype=np.float32)
-
-        t_w = np.sin(np.linspace(0, np.pi, patch_w))
-        t_h = np.sin(np.linspace(0, np.pi, patch_h))
-        weight_2d = np.maximum(np.outer(t_h, t_w).astype(np.float32), 0.05)
-
-        idx = 0
-        for y in y_offsets:
-            for x in x_offsets:
-                # Arrugas (Canal 3)
-                l3 = cv2.resize(logits_arrugas[idx, 3], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
-                accum_arrugas[y : y + patch_h, x : x + patch_w] += l3 * weight_2d
-                
-                # Acné (Canal 1)
-                l1 = cv2.resize(logits_acne[idx, 1], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
-                accum_acne[y : y + patch_h, x : x + patch_w] += l1 * weight_2d
-                
-                # Manchas (Canal 2)
-                l2 = cv2.resize(logits_manchas[idx, 2], (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
-                accum_manchas[y : y + patch_h, x : x + patch_w] += l2 * weight_2d
-
-                # Fondo Promedio (Canal 0)
-                bg_avg = (logits_arrugas[idx, 0] + logits_acne[idx, 0] + logits_manchas[idx, 0]) / 3.0
-                l0 = cv2.resize(bg_avg, (patch_w, patch_h), interpolation=cv2.INTER_LINEAR)
-                accum_bg[y : y + patch_h, x : x + patch_w] += l0 * weight_2d
-
-                accum_count[y : y + patch_h, x : x + patch_w] += weight_2d
-                idx += 1
-
-        counts = np.maximum(accum_count, 1e-5)
-        final_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
-        final_logits_face[0] = accum_bg / counts  # Fondo/Piel Sana equilibrado
-        final_logits_face[1] = (accum_acne / counts) + 0.10  # Sensibilidad equilibrada Acné
-        final_logits_face[2] = (accum_manchas / counts) + 0.15  # Sensibilidad equilibrada Manchas
-        final_logits_face[3] = (accum_arrugas / counts) + 0.15  # Sensibilidad equilibrada Arrugas
+        ...
+        """
 
         # Reconstruir los logits de la imagen original completa
         final_logits_orig = np.zeros((4, h_orig, w_orig), dtype=np.float32)
@@ -297,9 +257,9 @@ def analyze_skin(payload: AnalysisRequest):
                     "severity": severity
                 })
             
-            # Ordenar por tamaño descendente y tomar máximo 3 por clase para no saturar la UI con marcadores
+            # Ordenar por tamaño descendente y tomar hasta 8 focos por clase para detallar todas las zonas identificadas
             class_overlays.sort(key=lambda item: item["size"], reverse=True)
-            for item in class_overlays[:3]:
+            for item in class_overlays[:8]:
                 anomalies_detected.add(class_name)
                 del item["size"]
                 visual_overlay.append(item)
