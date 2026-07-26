@@ -69,11 +69,48 @@ export const MOCK_PRODUCTS: SkincareProduct[] = [
   }
 ];
 
-export async function getProductsByImperfections(anomalies: string[]): Promise<SkincareProduct[]> {
-  try {
-    console.log('Querying Neon database for anomalies:', anomalies);
+export interface AnomalyPixelCounts {
+  [anomaly: string]: number;
+}
 
-    // Expand search terms to cover variations with/without accents (e.g. 'acne' vs 'Acné')
+export async function getProductsByImperfections(
+  anomalies: string[],
+  pixelCounts?: AnomalyPixelCounts
+): Promise<SkincareProduct[]> {
+  try {
+    console.log('Querying Neon database for anomalies:', anomalies, 'with pixel counts:', pixelCounts);
+
+    // Normalize anomaly names (acne, manchas, arrugas)
+    const normalizedAnomalies = Array.from(new Set(
+      anomalies.map(a => a.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
+    ));
+
+    // Calculate severity weight per anomaly based on pixel counts
+    const anomalyWeights: Record<string, number> = {};
+    let totalPixels = 0;
+
+    if (pixelCounts) {
+      for (const [key, val] of Object.entries(pixelCounts)) {
+        const normKey = key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const px = Number(val) || 0;
+        anomalyWeights[normKey] = (anomalyWeights[normKey] || 0) + px;
+        totalPixels += px;
+      }
+    }
+
+    if (totalPixels > 0) {
+      for (const key of Object.keys(anomalyWeights)) {
+        anomalyWeights[key] = anomalyWeights[key] / totalPixels;
+      }
+    } else {
+      // Fallback equal weights if no pixel counts provided
+      const equalWeight = normalizedAnomalies.length > 0 ? 1 / normalizedAnomalies.length : 1;
+      for (const a of normalizedAnomalies) {
+        anomalyWeights[a] = equalWeight;
+      }
+    }
+
+    // Expand search terms for DB query
     const searchTerms = Array.from(new Set(
       anomalies.flatMap(a => {
         const normalized = a.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -84,8 +121,8 @@ export async function getProductsByImperfections(anomalies: string[]): Promise<S
       })
     ));
 
-    // Query Neon products matching anomalies
-    const products = await prisma.producto.findMany({
+    // Query Neon products matching any of the user's anomalies
+    let rawProducts = await prisma.producto.findMany({
       where: {
         productoImperfeccion: {
           some: {
@@ -107,9 +144,9 @@ export async function getProductsByImperfections(anomalies: string[]): Promise<S
       }
     });
 
-    if (!products || products.length === 0) {
-      console.log('No specific matches found for anomalies. Fetching all products from Neon...');
-      const allProducts = await prisma.producto.findMany({
+    if (!rawProducts || rawProducts.length === 0) {
+      console.log('No specific matches found. Fetching all products from Neon...');
+      rawProducts = await prisma.producto.findMany({
         include: {
           productoImperfeccion: {
             include: {
@@ -118,27 +155,10 @@ export async function getProductsByImperfections(anomalies: string[]): Promise<S
           }
         }
       });
-
-      if (allProducts && allProducts.length > 0) {
-        return allProducts.map(p => ({
-          id: String(p.id),
-          nombre: p.nombre,
-          marca: p.marca || 'IA_Cosmetic',
-          descripcion: p.descripcion || '',
-          precio: p.precio ? Number(p.precio) : 0,
-          imagenUrl: p.imagenUrl || '/products/default.png',
-          imperfecciones: Array.isArray(p.productoImperfeccion)
-            ? p.productoImperfeccion.map(pi => pi.imperfeccion?.nombre || '')
-            : []
-        }));
-      }
-
-      return MOCK_PRODUCTS.filter(p => 
-        p.imperfecciones.some(imp => anomalies.includes(imp))
-      );
     }
 
-    return products.map(p => ({
+    // Map DB products to SkincareProduct interface
+    const mappedProducts: SkincareProduct[] = rawProducts.map(p => ({
       id: String(p.id),
       nombre: p.nombre,
       marca: p.marca || 'IA_Cosmetic',
@@ -150,10 +170,68 @@ export async function getProductsByImperfections(anomalies: string[]): Promise<S
         : []
     }));
 
+    const productsToScore = mappedProducts.length > 0 ? mappedProducts : MOCK_PRODUCTS;
+
+    // --- ALGORITMO DE SCORING PONDERADO + DESEMPATE DE ESPECIFICIDAD (SIN LLM) ---
+    // 1. matchScore = suma de pesos de las anomalías que el usuario TIENE y el producto TRATA
+    // 2. jaccardSpec = (anomalías del usuario que trata) / (total de anomalías que trata el producto)
+    //    -> Desempata beneficiando productos enfocados/específicos sobre productos genéricos "multi-todo"
+    // 3. primaryCoverage = peso de la anomalía principal (mayor cantidad de px) tratada por el producto
+    const scoredProducts = productsToScore.map(product => {
+      const prodAnomaliesNorm = product.imperfecciones.map(imp =>
+        imp.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      );
+
+      // Anomalías coincidentes entre usuario y producto
+      const matchedUserAnomalies = normalizedAnomalies.filter(ua => prodAnomaliesNorm.includes(ua));
+
+      // Suma ponderada por porcentaje de píxeles
+      let matchScore = 0;
+      for (const ma of matchedUserAnomalies) {
+        matchScore += anomalyWeights[ma] || 0;
+      }
+
+      // Índice de especificidad (Jaccard similarity): evita empates beneficiando al producto enfocado
+      const totalProdAnomalies = Math.max(1, prodAnomaliesNorm.length);
+      const jaccardSpec = matchedUserAnomalies.length / totalProdAnomalies;
+
+      // Anomalía principal (la de mayor cantidad de píxeles)
+      const topAnomaly = Object.keys(anomalyWeights).sort((a, b) => (anomalyWeights[b] || 0) - (anomalyWeights[a] || 0))[0];
+      const coversTopAnomaly = topAnomaly && prodAnomaliesNorm.includes(topAnomaly) ? (anomalyWeights[topAnomaly] || 0) : 0;
+
+      // Score final compuesto
+      const finalScore = matchScore * 1000 + jaccardSpec * 100 + coversTopAnomaly * 10;
+
+      return {
+        product,
+        finalScore,
+        matchScore,
+        jaccardSpec,
+        coversTopAnomaly
+      };
+    });
+
+    // Ordenar de mayor a menor score.
+    // En caso de empate en el score entre productos similares, aplicar rotación aleatoria para explorar los 150 productos del catálogo
+    scoredProducts.sort((a, b) => {
+      const scoreDiff = b.finalScore - a.finalScore;
+      if (Math.abs(scoreDiff) > 0.001) return scoreDiff;
+      
+      const matchDiff = b.matchScore - a.matchScore;
+      if (Math.abs(matchDiff) > 0.001) return matchDiff;
+      
+      const specDiff = b.jaccardSpec - a.jaccardSpec;
+      if (Math.abs(specDiff) > 0.001) return specDiff;
+      
+      // Empate técnico: rotación aleatoria
+      return 0.5 - Math.random();
+    });
+
+    // Retornar todos los productos del catálogo ordenados por relevancia (sin recortar a 10)
+    return scoredProducts.map(sp => sp.product);
+
   } catch (error) {
     console.error('Database query error details:', error);
-    return MOCK_PRODUCTS.filter(p => 
-      p.imperfecciones.some(imp => anomalies.includes(imp))
-    );
+    return MOCK_PRODUCTS;
   }
 }

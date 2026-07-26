@@ -126,6 +126,7 @@ export default function DiagnosticoPage() {
   const [isMirrored, setIsMirrored] = useState(true);
   const [zoomLevel, setZoomLevel] = useState<number>(1.65);
   const [showMask, setShowMask] = useState(false);
+  const [visibleProductsCount, setVisibleProductsCount] = useState<number>(15);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -137,6 +138,7 @@ export default function DiagnosticoPage() {
       setCapturedImage(null);
       setResults(null);
       setShowMask(false);
+      setVisibleProductsCount(15);
 
       let mediaStream: MediaStream;
       try {
@@ -519,12 +521,14 @@ export default function DiagnosticoPage() {
           <div className={styles.productShelfHeading}>
             <div>
               <h2 id="recommended-products-title">Fórmulas recomendadas para tu piel</h2>
-              <p>Seleccionadas según las condiciones identificadas en el análisis.</p>
+              <p>Seleccionadas según las condiciones identificadas en el análisis dermo-cosmético.</p>
             </div>
-            <span>{results.products.length} {results.products.length === 1 ? 'fórmula recomendada' : 'fórmulas recomendadas'}</span>
+            <span>
+              Mostrando {Math.min(visibleProductsCount, results.products.length)} de {results.products.length} {results.products.length === 1 ? 'fórmula' : 'fórmulas'}
+            </span>
           </div>
           <div className={styles.productGrid}>
-            {results.products.map((product) => (
+            {results.products.slice(0, visibleProductsCount).map((product) => (
               <article className={styles.shelfProductCard} key={product.id}>
                 <div className={styles.shelfProductImage}>
                   <ProductImage src={product.imagenUrl} alt={product.nombre} />
@@ -543,6 +547,18 @@ export default function DiagnosticoPage() {
               </article>
             ))}
           </div>
+
+          {visibleProductsCount < results.products.length && (
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
+              <button
+                className={styles.secondaryButton}
+                onClick={() => setVisibleProductsCount(prev => prev + 15)}
+                style={{ padding: '0 36px', height: '52px', fontSize: '15px', borderRadius: '999px', cursor: 'pointer' }}
+              >
+                Ver más recomendaciones ({results.products.length - visibleProductsCount} restantes)
+              </button>
+            </div>
+          )}
         </section>
       )}
     </main>

@@ -48,9 +48,9 @@
 .resultCapture, .resultInfo { padding: clamp(20px, 1.8vw, 30px); background: rgb(255 253 252 / 82%); border: 1px solid var(--border); }
 .resultCapture { border-right: 0; border-radius: 26px 0 0 26px; }
 .resultInfo { border-radius: 0 26px 26px 0; }
-.resultCapture .captureInner { width: 100%; max-width: 680px; }
+.resultCapture .captureInner { width: 100%; max-width: 720px; }
 .resultCapture .sectionHeading { min-height: 74px; margin-bottom: 16px; align-items: flex-start; flex-direction: column; gap: 8px; }
-.resultCapture .viewport { width: 100%; max-width: 520px; aspect-ratio: 1 / 1; min-height: auto; max-height: none; margin-inline: auto; box-shadow: 0 18px 42px rgb(88 30 46 / 9%); }
+.resultCapture .viewport { width: 100%; max-width: 600px; aspect-ratio: 1 / 1; min-height: auto; max-height: none; margin-inline: auto; box-shadow: 0 18px 42px rgb(88 30 46 / 9%); }
 .resultCapture .sectionHeading h1, .resultCapture .sectionHeading h2 { font-size: clamp(29px, 2vw, 35px); font-weight: 800; line-height: 1.05; }
 .resultCapture .sectionHeading h1, .resultCapture .sectionHeading h2, .resultInfo .reportHeader h2, .productShelfHeading h2 { color: var(--plum); }
 .resultCapture .sectionHeading p { max-width: 480px; font-size: 17px; font-weight: 500; line-height: 1.45; }
@@ -72,7 +72,7 @@
 .sectionHeading p { margin-top: 8px; color: var(--plum); font-size: 20px; font-weight: 500; }
 .successBadge { flex: none; padding: 8px 12px; color: #39755a; background: #ddebdD; border-color: #cfe2cf; letter-spacing: 0; text-transform: none; }
 
-.viewport { position: relative; width: 100%; max-width: 540px; aspect-ratio: 1 / 1; min-height: auto; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(145deg, #faf7f7, #f1e9ee 48%, #eee9f0); box-shadow: 0 22px 55px rgb(88 30 46 / 8%), inset 0 0 70px rgb(255 255 255 / 52%); }
+.viewport { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 1; min-height: auto; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(145deg, #faf7f7, #f1e9ee 48%, #eee9f0); box-shadow: 0 22px 55px rgb(88 30 46 / 8%), inset 0 0 70px rgb(255 255 255 / 52%); }
 .media, .imageStage { position: absolute; inset: 0; width: 100%; height: 100%; }
 .media { object-fit: cover; }
 .mirrored { transform: scaleX(-1); }

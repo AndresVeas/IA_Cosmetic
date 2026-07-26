@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     let anomaliesArray: string[] = [];
     let visualOverlay: any[] = [];
     let maskImage: string | null = null;
+    let pixelCounts: Record<string, number> = {};
     let isRealInference = false;
 
     // Intentar consultar el servidor de FastAPI (Python)
@@ -35,8 +36,9 @@ export async function POST(req: NextRequest) {
         anomaliesArray = mlResults.anomalies;
         visualOverlay = mlResults.visualOverlay;
         maskImage = mlResults.maskImage || null;
+        pixelCounts = mlResults.pixelCounts || {};
         isRealInference = true;
-        console.log('Inferencia real completada por FastAPI. Detectado:', anomaliesArray);
+        console.log('Inferencia real completada por FastAPI. Detectado:', anomaliesArray, 'Píxeles:', pixelCounts);
       } else {
         console.warn('El servidor FastAPI respondió con un error. Código:', apiResponse.status);
       }
@@ -67,20 +69,23 @@ export async function POST(req: NextRequest) {
             { type: 'acne', x: 220, y: 280, radius: 14, label: `Acné Pápula (Simulado) #${index + 1}` },
             { type: 'acne', x: 410, y: 310, radius: 18, label: `Acné Pústula (Simulado) #${index + 2}` }
           );
+          pixelCounts['acne'] = 1200;
         } else if (type === 'manchas') {
           visualOverlay.push(
             { type: 'manchas', x: 280, y: 220, radius: 22, label: `Hiperpigmentación (Simulado) #${index + 1}` },
             { type: 'manchas', x: 380, y: 250, radius: 16, label: `Lentigo Solar (Simulado) #${index + 2}` }
           );
+          pixelCounts['manchas'] = 800;
         } else if (type === 'arrugas') {
           visualOverlay.push(
             { type: 'arrugas', x: 320, y: 140, radius: 30, label: `Línea de Expresión (Simulado) #${index + 1}` },
             { type: 'arrugas', x: 450, y: 210, radius: 20, label: `Línea Periocular (Simulado) #${index + 2}` }
           );
+          pixelCounts['arrugas'] = 500;
         }
       });
       // Crear una máscara SVG simulada para el fallback
-      let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480">`;
+      let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">`;
       visualOverlay.forEach((overlay) => {
         let color = '#e76f73'; // acne
         if (overlay.type === 'manchas') color = '#48a783';
@@ -94,20 +99,14 @@ export async function POST(req: NextRequest) {
     // Generar narrativa de recomendaciones según las anomalías
     const recommendationText = generateRecommendationText(anomaliesArray, isRealInference);
 
-    // Obtener productos relacionados de la base de datos (PostgreSQL/Prisma)
-    const products = await getProductsByImperfections(anomaliesArray);
-
-    const sortedProducts = [...products].sort((a, b) => {
-      const aMatches = a.imperfecciones.filter(imp => anomaliesArray.includes(imp)).length;
-      const bMatches = b.imperfecciones.filter(imp => anomaliesArray.includes(imp)).length;
-      return bMatches - aMatches;
-    });
+    // Obtener productos relacionados de la base de datos (PostgreSQL/Prisma) usando ranking ponderado + especificidad
+    const products = await getProductsByImperfections(anomaliesArray, pixelCounts);
 
     return NextResponse.json({
       anomalies: anomaliesArray,
       visualOverlay,
       recommendation: recommendationText,
-      products: sortedProducts,
+      products,
       maskImage
     });
 

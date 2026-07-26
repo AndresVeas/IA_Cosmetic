@@ -183,6 +183,7 @@ def analyze_skin(payload: AnalysisRequest):
         # Área mínima por clase: manchas requiere focos más grandes (las sombras difusas suelen ser extensas pero débiles)
         min_area = {1: 15, 2: 60, 3: 15}  # acne, manchas, arrugas
         
+        pixel_counts = {}
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
@@ -198,7 +199,8 @@ def analyze_skin(payload: AnalysisRequest):
             overlay_mask[class_mask == 1] = color_map[class_id]
             
             # Contar píxeles activos en la resolución 512x512
-            active_pixels = np.sum(class_mask)
+            active_pixels = int(np.sum(class_mask))
+            pixel_counts[class_name] = active_pixels
             print(f"[DEBUG] Clase {class_name.upper()} (512x512): {active_pixels} píxeles (umbral={conf_thresholds[class_id]})")
             
             # Encontrar contornos sobre la máscara final
@@ -263,7 +265,8 @@ def analyze_skin(payload: AnalysisRequest):
         return {
             "anomalies": list(anomalies_detected),
             "visualOverlay": visual_overlay,
-            "maskImage": mask_image_url
+            "maskImage": mask_image_url,
+            "pixelCounts": pixel_counts
         }
         
     except Exception as e:
