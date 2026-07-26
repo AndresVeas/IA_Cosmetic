@@ -117,7 +117,7 @@ def analyze_skin(payload: AnalysisRequest):
         # 2. Ecualización de contraste CLAHE en canal L (LAB) para mejorar detección en webcam
         lab = cv2.cvtColor(face_512, cv2.COLOR_RGB2LAB)
         l_ch, a_ch, b_ch = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=1.8, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=1.3, tileGridSize=(8, 8))
         l_eq = clahe.apply(l_ch)
         face_512_eq = cv2.cvtColor(cv2.merge((l_eq, a_ch, b_ch)), cv2.COLOR_LAB2RGB)
 
@@ -178,14 +178,20 @@ def analyze_skin(payload: AnalysisRequest):
             3: [232, 117, 137, 140]   # arrugas
         }
         
+        # Umbrales por clase: manchas necesita más confianza para evitar sombras naturales del pómulo/ojeras
+        conf_thresholds = {1: 0.25, 2: 0.35, 3: 0.25}  # acne, manchas, arrugas
+        # Área mínima por clase: manchas requiere focos más grandes (las sombras difusas suelen ser extensas pero débiles)
+        min_area = {1: 15, 2: 60, 3: 15}  # acne, manchas, arrugas
+        
         for class_id, class_name in classes_map.items():
             class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
-            # Descartar píxeles con confianza de probabilidad menor al 22% para mejorar sensibilidad
-            class_mask[probs[class_id] < 0.22] = 0
+            # Filtrar por confianza con umbral específico por clase
+            class_mask[probs[class_id] < conf_thresholds[class_id]] = 0
 
-            # Aplicar Apertura Morfológica (MORPH_OPEN) para limpiar hebras de cabello, contornos de oreja y artefactos delgados
-            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            # Apertura Morfológica: kernel más grande para manchas (5x5) para eliminar parches difusos de sombra
+            k_size = 5 if class_id == 2 else 3
+            kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_size, k_size))
             class_mask = cv2.morphologyEx(class_mask, cv2.MORPH_OPEN, kernel_open)
 
             # Pintar la máscara correspondiente a este canal en el overlay
@@ -193,7 +199,7 @@ def analyze_skin(payload: AnalysisRequest):
             
             # Contar píxeles activos en la resolución 512x512
             active_pixels = np.sum(class_mask)
-            print(f"[DEBUG] Clase {class_name.upper()} (512x512): {active_pixels} píxeles")
+            print(f"[DEBUG] Clase {class_name.upper()} (512x512): {active_pixels} píxeles (umbral={conf_thresholds[class_id]})")
             
             # Encontrar contornos sobre la máscara final
             contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -201,8 +207,8 @@ def analyze_skin(payload: AnalysisRequest):
             class_overlays = []
             for i, cnt in enumerate(contours):
                 area = cv2.contourArea(cnt)
-                # Omitir ruidos o artefactos pequeños (< 15px)
-                if area < 15:
+                # Omitir contornos por debajo del área mínima de su clase
+                if area < min_area[class_id]:
                     continue
                 
                 # Calcular la confianza/intensidad media de los píxeles de este contorno
