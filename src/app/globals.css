@@ -3,7 +3,8 @@
 :root {
   --background: #F7F4F1;
   --foreground: #581E2E;
-  --font-display: var(--font-outfit), "Outfit", Arial, sans-serif;
+  --font-display: var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif;
+  --font-serif: var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif;
   --font-body: var(--font-urbanist), "Urbanist", Arial, sans-serif;
   --font-ui: var(--font-urbanist), "Urbanist", Arial, sans-serif;
   --font-metric: var(--font-montserrat), "Montserrat", Arial, sans-serif;
@@ -13,10 +14,11 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-urbanist), "Urbanist", Arial, sans-serif;
-  --font-serif: var(--font-outfit), "Outfit", Arial, sans-serif;
-  --font-display: var(--font-outfit), "Outfit", Arial, sans-serif;
+  --font-serif: var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif;
+  --font-display: var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif;
   --font-ui: var(--font-urbanist), "Urbanist", Arial, sans-serif;
   --font-metric: var(--font-montserrat), "Montserrat", Arial, sans-serif;
+  --font-logo: var(--font-outfit), "Outfit", Arial, sans-serif;
   
   --color-brand-plum: #581E2E;
   --color-brand-lavender: #EDE7F2;
@@ -38,11 +40,11 @@ body {
 h1,
 h2 {
   font-family: var(--font-display);
-  letter-spacing: -0.035em;
+  letter-spacing: -0.01em;
 }
 
-h1 { font-weight: 800; }
-h2 { font-weight: 700; }
+h1 { font-weight: 500; }
+h2 { font-weight: 600; }
 
 h3,
 h4 {
