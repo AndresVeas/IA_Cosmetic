@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generar narrativa de recomendaciones según las anomalías
-    const recommendationText = generateRecommendationText(anomaliesArray, isRealInference);
+    const recommendationText = generateRecommendationText(anomaliesArray);
 
     // Obtener productos relacionados de la base de datos (PostgreSQL/Prisma) usando ranking ponderado + especificidad
     const products = await getProductsByImperfections(anomaliesArray, pixelCounts);
@@ -119,27 +119,47 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function generateRecommendationText(anomalies: string[], isReal: boolean): string {
-  const sourceText = isReal 
-    ? 'Basado en el análisis de visión computacional de tu modelo U-Net integrado en IA_Cosmetic,' 
-    : 'Basado en el análisis simulado de visión computacional de IA_Cosmetic,';
-    
-  let recommendationText = `${sourceText} se presenta el siguiente diagnóstico dermo-cosmético:\n\n`;
+function formatElegantList(items: string[]): string {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} y ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
+}
 
-  if (anomalies.includes('acne') && anomalies.includes('manchas')) {
-    recommendationText += 'Se observa una combinación de brotes activos de acné junto con manchas post-inflamatorias e hiperpigmentación. Recomendamos priorizar la regulación del sebo y la reparación de la barrera cutánea sin descuidar el desvanecimiento de manchas. La Niacinamide es tu ingrediente principal recomendado, ya que trata ambas condiciones simultáneamente de manera gentil.';
-  } else if (anomalies.includes('acne')) {
-    recommendationText += 'Se identifican zonas con exceso de sebo y poros obstruidos propensos a brotes de acné inflamatorio. Se recomienda una rutina enfocada en la exfoliación química suave con beta-hidroxiácidos (como el Ácido Salicílico) y agentes calmantes que impidan la proliferación bacteriana y desinflamen los poros.';
-  } else if (anomalies.includes('manchas') && anomalies.includes('arrugas')) {
-    recommendationText += 'Se aprecian signos mixtos de fotoenvejecimiento, manifestados en manchas solares localizadas y pérdida de firmeza con líneas de expresión marcadas. Sugerimos un enfoque regenerativo y protector: Vitamina C por la mañana para iluminar y proteger de los radicales libres, y Péptidos o Retinol por la noche para reactivar la producción de colágeno.';
-  } else if (anomalies.includes('manchas')) {
-    recommendationText += 'El análisis detecta un tono de piel irregular debido a la presencia de hiperpigmentación melánica y manchas solares. Es fundamental incorporar antioxidantes iluminadores como la Vitamina C en tu rutina diurna y despigmentantes reguladores de melanina, acompañados siempre de protector solar de amplio espectro.';
-  } else if (anomalies.includes('arrugas')) {
-    recommendationText += 'Se visualizan líneas de expresión en la frente y patas de gallo debido a la disminución del colágeno y deshidratación transepidérmica. Recomendamos tratamientos enfocados en la redensificación celular (Retinol) y humectación profunda con base de multipéptidos y ácido hialurónico.';
-  } else {
-    recommendationText += 'Tu piel muestra un balance saludable en general. Para mantenimiento preventivo, te sugerimos una rutina basada en hidratación profunda y protección antioxidante diaria.';
-  }
+function generateRecommendationText(anomalies: string[]): string {
+  const indicatorMeta: Record<string, { label: string; focus: string }> = {
+    acne: {
+      label: 'acné',
+      focus: 'el equilibrio y el confort de las zonas con tendencia a imperfecciones',
+    },
+    manchas: {
+      label: 'manchas',
+      focus: 'la uniformidad y la luminosidad del tono',
+    },
+    arrugas: {
+      label: 'líneas de expresión',
+      focus: 'la hidratación, la suavidad y la apariencia de las líneas visibles',
+    },
+  };
 
-  recommendationText += '\n\nCompleta tu rutina con los siguientes productos de nuestro catálogo Neon PostgreSQL recomendados para tu tipo de piel:';
-  return recommendationText;
+  const uniqueIndicators = Array.from(new Set(anomalies.map((item) => item.toLowerCase())));
+  const labels = uniqueIndicators.map((item) => indicatorMeta[item]?.label ?? item);
+  const focusAreas = uniqueIndicators
+    .map((item) => indicatorMeta[item]?.focus)
+    .filter((item): item is string => Boolean(item));
+
+  const indicatorSummary = labels.length > 0
+    ? `La lectura visual de tu piel destaca indicadores relacionados con ${formatElegantList(labels)}. Estos hallazgos se presentan como una guía para comprender con mayor claridad las necesidades que refleja tu piel en este momento.`
+    : 'La lectura visual refleja una apariencia equilibrada, sin indicadores destacados dentro de las categorías evaluadas.';
+
+  const careSummary = focusAreas.length > 0
+    ? `A partir de esta combinación, el cuidado puede orientarse hacia ${formatElegantList(focusAreas)}. Una rutina progresiva, respetuosa y constante ayudará a acompañar estas necesidades sin sobrecargar la piel.`
+    : 'Como cuidado general, se recomienda priorizar una rutina sencilla basada en hidratación, protección diaria y constancia.';
+
+  return [
+    indicatorSummary,
+    careSummary,
+    'A continuación encontrarás una selección de productos alineada con los indicadores identificados.',
+    'Este análisis es orientativo y complementa, pero no sustituye, la valoración de un profesional de la salud.',
+  ].join('\n\n');
 }

@@ -1,6 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, Sparkles, Check, Cpu, Sparkle } from "lucide-react";
+import {
+  Camera,
+  Sparkles,
+  ScanFace,
+  FlaskConical,
+  ClipboardCheck,
+  Crosshair,
+  UserRound,
+  ChartNoAxesCombined,
+  ShieldCheck,
+} from "lucide-react";
 import Logo from "@/components/Logo";
 import { getAllProducts } from "@/lib/db";
 
@@ -13,56 +23,64 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#F7F4F1] flex flex-col selection:bg-brand-dusty-rose/30 text-brand-plum font-sans">
       {/* Header */}
-      <header className="border-b border-brand-dusty-rose/20 py-4 px-6 sm:px-12 flex justify-between items-center bg-[#F7F4F1]/90 backdrop-blur-md sticky top-0 z-50">
+      <header className="home-header">
         <Link href="/">
-          <Logo />
+          <Logo className="home-logo" />
         </Link>
-        <nav className="hidden md:flex gap-8 items-center text-sm sm:text-base tracking-[0.15em] font-bold text-brand-plum">
+        <nav className="home-nav">
           <a href="#metodo" className="hover:text-brand-plum transition-colors duration-300">EL MÉTODO</a>
           <Link href="/catalogo" className="hover:text-brand-plum transition-colors duration-300">PRODUCTOS</Link>
           <Link 
             href="/diagnostico" 
-            className="bg-brand-plum text-[#F7F4F1] px-6 py-3 rounded-full hover:bg-brand-dusty-rose hover:text-brand-plum transition-all duration-300 hover:shadow-md font-bold tracking-widest text-xs sm:text-sm"
+            className="home-nav-cta"
           >
             DIAGNÓSTICO EN VIVO
           </Link>
         </nav>
+        <details className="mobile-menu">
+          <summary className="mobile-menu-button" aria-label="Abrir menú de navegación">
+            <span />
+            <span />
+            <span />
+          </summary>
+          <nav className="mobile-menu-panel" aria-label="Navegación móvil">
+            <a href="#metodo">EL MÉTODO</a>
+            <Link href="/catalogo">PRODUCTOS</Link>
+            <Link href="/diagnostico" className="mobile-menu-cta">DIAGNÓSTICO EN VIVO</Link>
+          </nav>
+        </details>
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 md:py-24 px-6 sm:px-12 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
-        {/* Soft abstract color blobs in background */}
-        <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-brand-lavender/50 blur-3xl -z-10" />
-        <div className="absolute bottom-10 right-1/4 w-96 h-96 rounded-full bg-brand-rose/40 blur-3xl -z-10" />
-
+      <section className="home-hero">
         {/* Hero Left Content */}
-        <div className="flex-grow flex-shrink-0 lg:max-w-2xl animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-brand-dusty-rose bg-brand-rose/20 text-[10px] tracking-widest text-brand-plum uppercase font-bold mb-6">
+        <div className="home-hero-copy">
+          <div className="home-eyebrow">
             <Sparkles className="w-3 h-3 text-brand-plum" />
             DIAGNÓSTICO DERMO-COSMÉTICO CON IA
           </div>
 
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-brand-plum leading-[1.05] mb-6">
+          <h1 className="home-title">
             Conoce tu <span className="italic">piel</span>.<br />
             Transforma tu <span className="italic">rutina</span>.<br />
-            <span className="font-medium text-brand-dusty-rose italic">Con ciencia e inteligencia.</span>
+            <span>Con ciencia e inteligencia.</span>
           </h1>
 
-          <p className="text-base md:text-lg text-brand-plum font-normal leading-relaxed mb-10 max-w-xl">
+          <p className="home-description">
             IA_COSMETIC fusiona visión computacional U-Net con formulación boutique para ofrecerte un diagnóstico profundo y recomendaciones personalizadas en tiempo real de forma científica.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+          <div className="home-actions">
             <Link
               href="/diagnostico"
-              className="group flex items-center justify-center gap-3 bg-brand-plum text-[#F7F4F1] px-8 py-4 rounded-full text-xs tracking-widest font-bold hover:bg-brand-dusty-rose hover:text-brand-plum transition-all duration-300 hover:shadow-lg"
+              className="home-primary-action group"
             >
               <Camera className="w-4 h-4 transition-transform group-hover:scale-110" />
               INICIAR DIAGNÓSTICO &rarr;
             </Link>
             <Link
               href="/catalogo"
-              className="flex items-center justify-center border border-brand-dusty-rose text-brand-plum px-8 py-4 rounded-full text-xs tracking-widest font-bold hover:bg-brand-rose/20 transition-all duration-300"
+              className="home-secondary-action"
             >
               VER CATÁLOGO
             </Link>
@@ -70,21 +88,19 @@ export default async function Home() {
         </div>
 
         {/* Hero Right Visual Column */}
-        <div className="flex-1 max-w-md lg:max-w-lg mx-auto w-full relative">
-          <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden border border-brand-dusty-rose/30 shadow-2xl bg-brand-rose/10">
+        <div className="home-hero-visual">
+          <div className="home-portrait home-portrait-provided">
             {/* The generated high-end model face image */}
             <Image
-              src="/hero-skin-natural.png"
+              src="/hero-main-imperfections-v2.png"
               alt="Retrato con piel natural y textura visible"
               fill
-              className="object-cover"
+              className="home-portrait-image"
               priority
             />
-            {/* Subtle color integration */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-brand-lavender/10 to-brand-rose/10 mix-blend-multiply" />
             
             {/* Minimal animated skin-analysis layer */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-75" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg className="home-analysis-map" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <defs>
                 <clipPath id="heroFaceClip"><ellipse cx="205" cy="226" rx="116" ry="160" /></clipPath>
                 <linearGradient id="heroScanBeam" x1="85" y1="0" x2="325" y2="0" gradientUnits="userSpaceOnUse">
@@ -129,152 +145,161 @@ export default async function Home() {
                 </rect>
               </g>
             </svg>
+            <span className="scan-corner scan-corner-tl" />
+            <span className="scan-corner scan-corner-tr" />
+            <span className="scan-corner scan-corner-bl" />
+            <span className="scan-corner scan-corner-br" />
+            <div className="live-analysis-badge">
+              <Sparkles className="w-3 h-3" />
+              <strong>ANÁLISIS</strong>
+              <span>EN VIVO</span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Feature Blocks Section */}
-      <section id="metodo" className="bg-brand-sand/30 py-20 px-6 sm:px-12 border-t border-b border-brand-dusty-rose/10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
-                <Camera className="w-5 h-5" />
+      <section id="metodo" className="method-section">
+        <div className="method-grid">
+            <article className="method-card">
+              <div className="method-icon">
+                <ScanFace />
               </div>
-              <h3 className="font-serif text-2xl font-semibold mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
-              <p className="text-xl text-brand-plum font-normal leading-relaxed">
+              <h3>VISIÓN AVANZADA</h3>
+              <p>
                 Escaneo instantáneo de imperfecciones para evaluar acné, manchas de sol, líneas de expresión e hiperpigmentación con alta precisión.
               </p>
-              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-base tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <Link href="/diagnostico" className="method-link">
                 Conocer más &rarr;
               </Link>
-            </div>
+            </article>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="w-12 h-12 rounded-2xl bg-brand-rose/40 flex items-center justify-center text-brand-plum mb-6">
-                <Cpu className="w-5 h-5" />
+            <article className="method-card method-card-featured">
+              <div className="method-icon">
+                <FlaskConical />
               </div>
-              <h3 className="font-serif text-2xl font-semibold mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
-              <p className="text-xl text-brand-plum font-normal leading-relaxed">
+              <h3>ACTIVOS INTELIGENTES</h3>
+              <p>
                 Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance celular de tu rostro.
               </p>
-              <Link href="/catalogo" className="inline-flex items-center gap-1.5 text-base tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <Link href="/catalogo" className="method-link">
                 Conocer más &rarr;
               </Link>
-            </div>
+            </article>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
-                <Sparkle className="w-5 h-5" />
+            <article className="method-card">
+              <div className="method-icon">
+                <ClipboardCheck />
               </div>
-              <h3 className="font-serif text-2xl font-semibold mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
-              <p className="text-xl text-brand-plum font-normal leading-relaxed">
+              <h3>PRESCRIPCIÓN BOUTIQUE</h3>
+              <p>
                 Rutinas y combinaciones personalizadas basadas en tu análisis biométrico, conectadas de forma dinámica a nuestro catálogo inteligente.
               </p>
-              <Link href="/diagnostico" className="inline-flex items-center gap-1.5 text-base tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <Link href="/diagnostico" className="method-link">
                 Conocer más &rarr;
               </Link>
-            </div>
-          </div>
+            </article>
         </div>
       </section>
 
       {/* Middle Elegant Banner */}
-      <section className="bg-brand-lavender py-20 px-6 sm:px-12 border-b border-brand-dusty-rose/10">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
-          <div className="lg:max-w-md">
-            <span className="text-base tracking-widest text-brand-plum uppercase font-extrabold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
-            <h2 className="font-serif text-5xl sm:text-6xl text-brand-plum font-medium leading-tight">
-              Beneficios que se <span className="italic">ven</span>, ciencia que se <span className="italic">siente</span>.
+      <section className="benefits-section">
+        <div className="benefits-inner">
+          <div className="benefits-intro">
+            <span>TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
+            <div className="benefits-divider" />
+            <h2>
+              Beneficios que<br />se <em>ven</em>, ciencia<br />que se <em>siente</em>.
             </h2>
           </div>
-          <div className="grid sm:grid-cols-2 gap-6 lg:max-w-3xl w-full">
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
-                <Check className="w-4 h-4" />
+          <div className="benefits-grid">
+            <article className="benefit-card">
+              <span className="benefit-number">01</span>
+              <div className="benefit-icon">
+                <Crosshair />
               </div>
-              <div>
-                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Diagnóstico preciso</h4>
-                <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
+              <h4>Diagnóstico preciso</h4>
+              <i />
+              <p>Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
+            </article>
+            <article className="benefit-card">
+              <span className="benefit-number">02</span>
+              <div className="benefit-icon">
+                <UserRound />
               </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
-                <Check className="w-4 h-4" />
+              <h4>Personalización real</h4>
+              <i />
+              <p>Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
+            </article>
+            <article className="benefit-card">
+              <span className="benefit-number">03</span>
+              <div className="benefit-icon">
+                <ChartNoAxesCombined />
               </div>
-              <div>
-                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Personalización real</h4>
-                <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
+              <h4>Resultados visibles</h4>
+              <i />
+              <p>Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
+            </article>
+            <article className="benefit-card">
+              <span className="benefit-number">04</span>
+              <div className="benefit-icon">
+                <ShieldCheck />
               </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
-                <Check className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Resultados visibles</h4>
-                <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-brand-rose/40 flex items-center justify-center shrink-0 text-brand-plum mt-1">
-                <Check className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Seguridad & transparencia</h4>
-                <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
-              </div>
-            </div>
+              <h4>Seguridad &amp; transparencia</h4>
+              <i />
+              <p>Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
+            </article>
           </div>
         </div>
       </section>
 
       {/* Products Section */}
-      <section id="productos" className="py-24 px-6 sm:px-12 max-w-7xl mx-auto w-full">
-        <div className="flex justify-between items-end mb-12">
+      <section id="productos" className="products-section">
+        <div className="products-heading">
           <div>
-            <span className="text-sm tracking-widest text-brand-plum uppercase block mb-3 font-extrabold">FÓRMULAS DESTACADAS</span>
-            <h2 className="font-serif text-5xl sm:text-6xl font-medium tracking-wide text-brand-plum">
+            <span className="products-kicker">FÓRMULAS DESTACADAS</span>
+            <h2>
               Selección <span className="italic">IA_Cosmetic</span>
             </h2>
           </div>
           <Link
             href="/catalogo"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"
+            className="products-catalog-link"
           >
-            VER CATÁLOGO COMPLETO &rarr;
+            <span>VER CATÁLOGO COMPLETO</span><b>&rarr;</b>
           </Link>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="products-grid">
           {showcaseProducts.map((product) => (
             <div 
               key={product.id} 
-              className="bg-white border border-brand-dusty-rose/20 rounded-[2rem] overflow-hidden hover:shadow-xl hover:border-brand-dusty-rose transition-all duration-500 group flex flex-col h-full shadow-sm"
+              className="product-card group"
             >
-              <div className="relative aspect-[4/5] w-full bg-brand-sand/20 overflow-hidden border-b border-brand-dusty-rose/10 flex items-center justify-center p-4">
+              <div className="product-image-wrap">
                 <img 
                   src={product.imagenUrl || '/products/default.png'} 
                   alt={product.nombre}
-                  className="max-h-full max-w-full object-contain transition-transform duration-700 group-hover:scale-105"
+                  className="product-image"
                 />
                 {product.imperfecciones.length > 0 && (
-                  <span className="absolute top-4 left-4 bg-brand-lavender text-brand-plum border border-brand-dusty-rose/40 px-3 py-1 rounded-full text-[9px] tracking-widest font-bold uppercase z-10">
+                  <span className="product-tag">
                     {product.imperfecciones[0]}
                   </span>
                 )}
               </div>
-              <div className="p-6 flex flex-col flex-1">
-                <span className="text-[10px] text-brand-plum/75 tracking-widest uppercase mb-1 font-semibold">{product.marca}</span>
-                <h3 className="font-serif text-2xl font-semibold text-brand-plum mb-2 leading-snug">{product.nombre}</h3>
-                <p className="text-lg text-brand-plum font-medium leading-relaxed mb-6 flex-1 line-clamp-3">{product.descripcion}</p>
-                <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
-                  <span className="font-bold text-lg text-brand-plum">${product.precio.toFixed(2)}</span>
+              <div className="product-content">
+                <span className="product-brand">{product.marca}</span>
+                <h3>{product.nombre}</h3>
+                <p>{product.descripcion}</p>
+                <div className="product-footer">
+                  <span>${product.precio.toFixed(2)}</span>
                   <Link 
                     href="/diagnostico" 
-                    className="text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"
+                    className="product-action"
+                    aria-label={`Ver diagnóstico para ${product.nombre}`}
                   >
-                    DIAGNÓSTICO &rarr;
+                    <span>DIAGNÓSTICO</span><b>+</b>
                   </Link>
                 </div>
               </div>

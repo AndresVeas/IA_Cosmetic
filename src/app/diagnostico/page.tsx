@@ -86,13 +86,14 @@ function formatConditionTag(item: string): string {
 
 function DiagnosisProgress({ analyzed = false }: { analyzed?: boolean }) {
   return (
-    <div className={styles.progress} aria-label={`Paso ${analyzed ? 2 : 1} de 2`}>
+    <div className={styles.progress} aria-label={`Paso ${analyzed ? 3 : 1} de 3`}>
       {[
-        ['1', 'Captura', analyzed ? 'Completado' : 'Actual'],
-        ['2', 'Análisis', analyzed ? 'Resultado disponible' : 'Siguiente paso'],
+        ['1', 'Captura', 'Tu foto'],
+        ['2', 'Análisis', 'IA inteligente'],
+        ['3', 'Resultado', 'Recomendaciones'],
       ].map(([number, label, caption], index) => (
         <div className={styles.progressStep} key={number}>
-          <div className={`${styles.progressNumber} ${index < (analyzed ? 2 : 1) ? styles.progressActive : ''}`}>
+          <div className={`${styles.progressNumber} ${index < (analyzed ? 3 : 1) ? styles.progressActive : ''}`}>
             {analyzed && index === 0 ? <Check size={14} /> : number}
           </div>
           <strong>{label}</strong>
@@ -286,6 +287,13 @@ export default function DiagnosticoPage() {
             <h1>Tu análisis comenzará <span className="italic">aquí</span></h1>
             <p>Captura tu rostro para obtener un análisis inteligente y recomendaciones personalizadas.</p>
           </div>
+          <div className={styles.introSecurity}>
+            <span><ShieldCheck /></span>
+            <div>
+              <strong>Tus datos están protegidos</strong>
+              <small>Privacidad y seguridad garantizadas</small>
+            </div>
+          </div>
         </div>
       )}
 
@@ -439,7 +447,7 @@ export default function DiagnosticoPage() {
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className={styles.hiddenInput} aria-label="Seleccionar fotografía" />
 
             {!isCameraActive && !capturedImage && (
-              <div className={styles.formatNote}><Info /> Formatos de imagen compatibles con tu navegador</div>
+              <div className={styles.formatNote}><Info /> Formatos compatibles: .jpg, .png y .webp (máx. 10 MB)</div>
             )}
 
             {isCameraActive && (
@@ -500,7 +508,20 @@ export default function DiagnosticoPage() {
 
               <div className={styles.summaryCard}>
                 <span><Sparkles /></span>
-                <p>{results.recommendation}</p>
+                <div className={styles.summaryCopy}>
+                  <small>Lectura personalizada</small>
+                  {results.recommendation.split('\n\n').map((paragraph, index, paragraphs) => {
+                    const isDisclaimer = index === paragraphs.length - 1;
+                    return isDisclaimer ? (
+                      <div className={styles.summaryNote} key={`${index}-${paragraph.slice(0, 24)}`}>
+                        <Info />
+                        <p>{paragraph}</p>
+                      </div>
+                    ) : (
+                      <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
+                    );
+                  })}
+                </div>
               </div>
 
               {results.anomalies.length > 0 && (
