@@ -187,36 +187,31 @@ def analyze_skin(payload: AnalysisRequest):
         
         pixel_counts = {}
         for class_id, class_name in classes_map.items():
-            class_mask = (prediction_scaled == class_id).astype(np.uint8)
+            raw_class_mask = (prediction_scaled == class_id).astype(np.uint8)
             
             # Filtrar por confianza con umbral específico por clase
-            class_mask[probs[class_id] < conf_thresholds[class_id]] = 0
+            raw_class_mask[probs[class_id] < conf_thresholds[class_id]] = 0
 
             # Apertura Morfológica: kernel más grande para manchas (5x5) para eliminar parches difusos de sombra
             k_size = 5 if class_id == 2 else 3
             kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_size, k_size))
-            class_mask = cv2.morphologyEx(class_mask, cv2.MORPH_OPEN, kernel_open)
-
-            # Pintar la máscara correspondiente a este canal en el overlay
-            overlay_mask[class_mask == 1] = color_map[class_id]
+            raw_class_mask = cv2.morphologyEx(raw_class_mask, cv2.MORPH_OPEN, kernel_open)
             
-            # Contar píxeles activos en la resolución 512x512
-            active_pixels = int(np.sum(class_mask))
-            pixel_counts[class_name] = active_pixels
-            print(f"[DEBUG] Clase {class_name.upper()} (512x512): {active_pixels} píxeles (umbral={conf_thresholds[class_id]})")
+            # Encontrar contornos sobre la máscara umbralizada
+            contours, _ = cv2.findContours(raw_class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
-            # Encontrar contornos sobre la máscara final
-            contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
+            valid_contours = []
             class_overlays = []
             for i, cnt in enumerate(contours):
                 area = cv2.contourArea(cnt)
-                # Omitir contornos por debajo del área mínima de su clase
+                # Omitir contornos por debajo del área mínima de su clase (15px acné/arrugas, 60px manchas)
                 if area < min_area[class_id]:
                     continue
                 
+                valid_contours.append(cnt)
+
                 # Calcular la confianza/intensidad media de los píxeles de este contorno
-                single_contour_mask = np.zeros(class_mask.shape, dtype=np.uint8)
+                single_contour_mask = np.zeros(raw_class_mask.shape, dtype=np.uint8)
                 cv2.drawContours(single_contour_mask, [cnt], -1, 1, thickness=-1)
                 mean_conf = np.mean(probs[class_id][single_contour_mask == 1]) if np.sum(single_contour_mask) > 0 else 0.0
                 confidence_pct = max(50, int(mean_conf * 100))
@@ -252,10 +247,23 @@ def analyze_skin(payload: AnalysisRequest):
                     "severity": severity
                 })
             
+            # Crear la máscara limpia filtrada ÚNICAMENTE con los contornos válidos que superan el área mínima
+            cleaned_class_mask = np.zeros(raw_class_mask.shape, dtype=np.uint8)
+            if len(valid_contours) > 0:
+                cv2.drawContours(cleaned_class_mask, valid_contours, -1, 1, thickness=-1)
+                anomalies_detected.add(class_name)
+
+            # Pintar la máscara correspondiente a este canal en el overlay usando solo píxeles válidos
+            overlay_mask[cleaned_class_mask == 1] = color_map[class_id]
+            
+            # Contar píxeles activos válidos en la resolución 512x512
+            active_pixels = int(np.sum(cleaned_class_mask))
+            pixel_counts[class_name] = active_pixels
+            print(f"[DEBUG] Clase {class_name.upper()} (512x512): {active_pixels} px válidos en {len(valid_contours)} focos (umbral={conf_thresholds[class_id]}, min_area={min_area[class_id]}px)")
+
             # Ordenar por tamaño descendente y tomar hasta 8 focos por clase para detallar todas las zonas identificadas
             class_overlays.sort(key=lambda item: item["size"], reverse=True)
             for item in class_overlays[:8]:
-                anomalies_detected.add(class_name)
                 del item["size"]
                 visual_overlay.append(item)
                 
@@ -271,15 +279,22 @@ def analyze_skin(payload: AnalysisRequest):
                 unique_id = uuid.uuid4().hex[:6]
                 scan_tag = f"scan_{timestamp}_{unique_id}"
 
-                base_project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                if not os.path.exists(os.path.join(base_project_dir, "images")):
-                    backend_dir = os.path.dirname(os.path.abspath(__file__))
-                    if os.path.exists(os.path.join(backend_dir, "images")):
-                        base_project_dir = backend_dir
+                # Determinar directorio raíz de imágenes (soporta ejecución local y Docker con volumen ./images:/app/images)
+                backend_dir = os.path.dirname(os.path.abspath(__file__))
+                parent_dir = os.path.dirname(backend_dir)
 
-                photos_dir = os.path.join(base_project_dir, "images", "photos")
-                results_dir = os.path.join(base_project_dir, "images", "results")
-                mask_dir = os.path.join(base_project_dir, "images", "mask")
+                if os.path.exists(os.path.join(parent_dir, "images")):
+                    images_root = os.path.join(parent_dir, "images")
+                elif os.path.exists(os.path.join(backend_dir, "images")):
+                    images_root = os.path.join(backend_dir, "images")
+                elif os.path.exists("/app/images"):
+                    images_root = "/app/images"
+                else:
+                    images_root = os.path.join(parent_dir, "images")
+
+                photos_dir = os.path.join(images_root, "photos")
+                results_dir = os.path.join(images_root, "results")
+                mask_dir = os.path.join(images_root, "mask")
 
                 os.makedirs(photos_dir, exist_ok=True)
                 os.makedirs(results_dir, exist_ok=True)

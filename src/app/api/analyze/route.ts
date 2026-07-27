@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductsByImperfections } from '@/lib/db';
-import fs from 'fs';
-import path from 'path';
 
 export async function POST(req: NextRequest) {
   try {
@@ -98,11 +96,6 @@ export async function POST(req: NextRequest) {
       maskImage = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
     }
 
-    // Guardar imágenes localmente ÚNICAMENTE cuando la inferencia proviene del servidor real de FastAPI (no en simulación)
-    if (isRealInference) {
-      await saveScanImagesLocally(image, maskImage, anomaliesArray);
-    }
-
     // Generar narrativa de recomendaciones según las anomalías
     const recommendationText = generateRecommendationText(anomaliesArray, isRealInference);
 
@@ -149,49 +142,4 @@ function generateRecommendationText(anomalies: string[], isReal: boolean): strin
 
   recommendationText += '\n\nCompleta tu rutina con los siguientes productos de nuestro catálogo Neon PostgreSQL recomendados para tu tipo de piel:';
   return recommendationText;
-}
-
-async function saveScanImagesLocally(rawImageBase64: string, maskDataUrl: string | null, anomalies: string[]) {
-  if (!anomalies || anomalies.length === 0) {
-    console.log('[SERVER IMAGES] Inferencia sin anomalías. No se guardan imágenes a disco.');
-    return;
-  }
-  try {
-    const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 15);
-    const randomUid = Math.random().toString(36).substring(2, 8);
-    const scanTag = `scan_${timestamp}_${randomUid}`;
-
-    const baseDir = process.cwd();
-    const photosDir = path.join(baseDir, 'images', 'photos');
-    const maskDir = path.join(baseDir, 'images', 'mask');
-    const resultsDir = path.join(baseDir, 'images', 'results');
-
-    if (!fs.existsSync(photosDir)) fs.mkdirSync(photosDir, { recursive: true });
-    if (!fs.existsSync(maskDir)) fs.mkdirSync(maskDir, { recursive: true });
-    if (!fs.existsSync(resultsDir)) fs.mkdirSync(resultsDir, { recursive: true });
-
-    // 1. Guardar Foto Original (_photo.jpg)
-    const photoBase64Data = rawImageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const photoBuffer = Buffer.from(photoBase64Data, 'base64');
-    fs.writeFileSync(path.join(photosDir, `${scanTag}_photo.jpg`), photoBuffer);
-
-    // 2. Guardar Máscara (_mask.png / _mask.svg)
-    if (maskDataUrl) {
-      if (maskDataUrl.startsWith('data:image/svg+xml')) {
-        const svgContent = decodeURIComponent(maskDataUrl.replace(/^data:image\/svg\+xml;utf8,/, ''));
-        fs.writeFileSync(path.join(maskDir, `${scanTag}_mask.svg`), svgContent, 'utf-8');
-      } else {
-        const maskBase64Data = maskDataUrl.replace(/^data:image\/\w+;base64,/, '');
-        const maskBuffer = Buffer.from(maskBase64Data, 'base64');
-        fs.writeFileSync(path.join(maskDir, `${scanTag}_mask.png`), maskBuffer);
-      }
-    }
-
-    // 3. Guardar Resultado (_result.jpg)
-    fs.writeFileSync(path.join(resultsDir, `${scanTag}_result.jpg`), photoBuffer);
-
-    console.log(`[SERVER IMAGES] Imágenes guardadas exitosamente en images/ con tag '${scanTag}' (${anomalies.length} anomalías: ${anomalies.join(', ')})`);
-  } catch (err) {
-    console.error('[SERVER IMAGES ERROR] Error guardando imágenes localmente:', err);
-  }
 }

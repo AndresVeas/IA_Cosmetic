@@ -9,6 +9,7 @@ services:
     volumes:
       # Montar localmente para poder modificar el código sin reconstruir la imagen completa
       - ./backend:/app
+      - ./images:/app/images
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
