@@ -263,9 +263,9 @@ export default async function Home() {
                 )}
               </div>
               <div className="p-6 flex flex-col flex-1">
-                <span className="text-[10px] text-brand-plum/75 tracking-widest uppercase mb-1 font-semibold">{product.type}</span>
-                <h3 className="font-serif text-2xl font-semibold text-brand-plum mb-2 leading-snug">{product.name}</h3>
-                <p className="text-lg text-brand-plum font-medium leading-relaxed mb-6 flex-1">{product.description}</p>
+                <span className="text-[10px] text-brand-plum/75 tracking-widest uppercase mb-1 font-semibold">{product.marca}</span>
+                <h3 className="font-serif text-2xl font-semibold text-brand-plum mb-2 leading-snug">{product.nombre}</h3>
+                <p className="text-lg text-brand-plum font-medium leading-relaxed mb-6 flex-1 line-clamp-3">{product.descripcion}</p>
                 <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
                   <span className="font-bold text-lg text-brand-plum">${product.precio.toFixed(2)}</span>
                   <Link 

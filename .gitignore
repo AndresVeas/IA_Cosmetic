@@ -51,3 +51,10 @@ venv_wsl/
 *.h5
 *.safetensors
 backend/best_model_iou.onnx
+
+# Almacenamiento de imágenes de diagnósticos (las carpetas son visibles localmente pero su contenido no se sube a GitHub)
+images/photos/*
+images/results/*
+images/mask/*
+!.gitkeep
+
