@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import type { LucideIcon } from 'lucide-react';
@@ -270,7 +269,7 @@ export default function DiagnosticoPage() {
         <div className={styles.initialIntro}>
           <span><Sparkles /></span>
           <div>
-            <h1>Tu análisis comenzará aquí</h1>
+            <h1>Tu análisis comenzará <span className="italic">aquí</span></h1>
             <p>Captura tu rostro para obtener un análisis inteligente y recomendaciones personalizadas.</p>
           </div>
         </div>
@@ -280,7 +279,7 @@ export default function DiagnosticoPage() {
         <div className={styles.resultIntro}>
           <span><Sparkles /></span>
           <div>
-            <h1>Análisis Dermocosmético</h1>
+            <h1>Análisis <span className="italic">Dermocosmético</span></h1>
             <p>Resultados generados a partir del análisis inteligente de tu piel.</p>
           </div>
         </div>
@@ -293,8 +292,8 @@ export default function DiagnosticoPage() {
               <div>
                 <div className={styles.headingTitleRow}>
                   {hasResult || (!capturedImage && !isAnalyzing)
-                    ? <h2 id="capture-title">Captura de rostro</h2>
-                    : <h1 id="capture-title">Captura de rostro</h1>}
+                    ? <h2 id="capture-title">Captura de <span className="italic">rostro</span></h2>
+                    : <h1 id="capture-title">Captura de <span className="italic">rostro</span></h1>}
                   {hasResult && <span className={styles.successBadge}><CheckCircle2 /> Imagen analizada</span>}
                 </div>
                 <p>{hasResult ? 'Tu imagen ha sido capturada y analizada correctamente.' : 'Posiciona tu rostro completo en el encuadre para obtener un análisis preciso.'}</p>
@@ -400,7 +399,7 @@ export default function DiagnosticoPage() {
                 <div className={styles.placeholder}>
                   <div className={styles.faceSilhouette} aria-hidden="true"><span /></div>
                   <span className={styles.cameraOrb}><Camera /></span>
-                  <h2>Cámara inactiva</h2>
+                  <h2>Cámara <span className="italic">inactiva</span></h2>
                   <p>Activa tu cámara para el análisis dermocosmético o sube una fotografía desde tus archivos.</p>
                   <div className={styles.captureHints} aria-label="Recomendaciones para la captura">
                     <span><Check /> Luz frontal</span>
@@ -417,7 +416,7 @@ export default function DiagnosticoPage() {
               {isAnalyzing && (
                 <div className={styles.loadingOverlay} role="status">
                   <Loader2 className={styles.spinner} />
-                  <h2>Analizando tu piel…</h2>
+                  <h2>Analizando tu <span className="italic">piel</span>…</h2>
                   <p>La visión computacional está identificando patrones visibles.</p>
                 </div>
               )}
@@ -460,7 +459,7 @@ export default function DiagnosticoPage() {
           {!capturedImage && !isAnalyzing && (
             <div className={styles.introPanel}>
               <div className={styles.introLead}>
-                <h2>Análisis inteligente</h2>
+                <h2>Análisis <span className="italic">inteligente</span></h2>
                 <p>Cuando captures tu rostro, la IA analizará patrones visibles de tu piel y preparará recomendaciones personalizadas.</p>
               </div>
               <DiagnosisProgress />
@@ -482,7 +481,7 @@ export default function DiagnosticoPage() {
             <div className={styles.report}>
               <div className={styles.reportHeader}>
                 <span className={styles.eyebrow}>Análisis dermocosmético</span>
-                <h2>Informe de tu piel</h2>
+                <h2>Informe de tu <span className="italic">piel</span></h2>
               </div>
 
               <div className={styles.summaryCard}>
@@ -492,7 +491,7 @@ export default function DiagnosticoPage() {
 
               {results.anomalies.length > 0 && (
                 <section className={styles.reportSection}>
-                  <h3>Indicadores clave</h3>
+                  <h3>Indicadores <span className="italic">clave</span></h3>
                   <div className={styles.indicators}>
                     {results.anomalies.map((anomaly) => {
                       const meta = getAnomalyMeta(anomaly);
@@ -526,7 +525,7 @@ export default function DiagnosticoPage() {
         <section className={styles.productShelf} aria-labelledby="recommended-products-title">
           <div className={styles.productShelfHeading}>
             <div>
-              <h2 id="recommended-products-title">Fórmulas recomendadas para tu piel</h2>
+              <h2 id="recommended-products-title">Fórmulas recomendadas para tu <span className="italic">piel</span></h2>
               <p>Seleccionadas según las condiciones identificadas en el análisis dermo-cosmético.</p>
             </div>
             <span>

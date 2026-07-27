@@ -117,7 +117,7 @@ export default function Logo({ showTagline = false, className = "", alignment = 
       <div className={`flex flex-col items-center text-center gap-3 shrink-0 ${className}`}>
         <LogoIcon className="w-20 h-20 text-brand-plum flex-shrink-0" />
         <div className="flex flex-col items-center">
-          <div className="font-display text-4xl tracking-[0.08em] font-bold leading-none flex items-center gap-1.5">
+          <div className="font-logo text-4xl tracking-[0.08em] font-bold leading-none flex items-center gap-1.5">
             <span className="text-brand-plum font-bold">IA</span>
             <span className="text-brand-accent font-semibold tracking-[0.1em] ml-1">COSMETIC</span>
           </div>
@@ -141,7 +141,7 @@ export default function Logo({ showTagline = false, className = "", alignment = 
     <div className={`flex items-center gap-2 shrink-0 ${className}`}>
       <LogoIcon className="w-12 h-12 text-brand-plum flex-shrink-0" />
       <div className="flex flex-col justify-center">
-        <div className="font-display text-2xl tracking-[0.07em] font-bold leading-none flex items-center">
+        <div className="font-logo text-2xl tracking-[0.07em] font-bold leading-none flex items-center">
           <span className="text-brand-plum font-bold">IA</span>
           <span className="text-brand-accent font-semibold tracking-[0.09em] ml-2">COSMETIC</span>
         </div>

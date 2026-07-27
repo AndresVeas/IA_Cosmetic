@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Montserrat, Outfit, Urbanist } from "next/font/google";
+import { Montserrat, Outfit, Urbanist, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -20,6 +20,13 @@ const montserrat = Montserrat({
   weight: ["600", "700"],
 });
 
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant-garamond",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "IA_Cosmetic | Análisis Dermo-Cosmético de Precisión",
   description: "Analiza tu piel con tecnología de visión computacional avanzada y recibe una recomendación dermo-cosmética personalizada.",
@@ -33,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${outfit.variable} ${urbanist.variable} ${montserrat.variable} h-full antialiased`}
+      className={`${outfit.variable} ${urbanist.variable} ${montserrat.variable} ${cormorantGaramond.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#FDFBF7] text-[#1A1A1A] font-sans flex flex-col">
         {children}

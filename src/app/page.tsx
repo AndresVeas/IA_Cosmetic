@@ -40,13 +40,13 @@ export default async function Home() {
             DIAGNÓSTICO DERMO-COSMÉTICO CON IA
           </div>
 
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-[-0.04em] text-brand-plum leading-[1.05] mb-6">
-            Conoce tu piel.<br />
-            Transforma tu rutina.<br />
-            <span className="font-bold text-brand-dusty-rose">Con ciencia e inteligencia.</span>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-brand-plum leading-[1.05] mb-6">
+            Conoce tu <span className="italic">piel</span>.<br />
+            Transforma tu <span className="italic">rutina</span>.<br />
+            <span className="font-medium text-brand-dusty-rose italic">Con ciencia e inteligencia.</span>
           </h1>
 
-          <p className="text-base md:text-lg text-brand-plum/80 font-normal leading-relaxed mb-10 max-w-xl">
+          <p className="text-base md:text-lg text-brand-plum font-normal leading-relaxed mb-10 max-w-xl">
             IA_COSMETIC fusiona visión computacional U-Net con formulación boutique para ofrecerte un diagnóstico profundo y recomendaciones personalizadas en tiempo real de forma científica.
           </p>
 
@@ -139,7 +139,7 @@ export default async function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Camera className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-2xl font-bold mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
+              <h3 className="font-serif text-2xl font-semibold mb-3 text-brand-plum">VISIÓN AVANZADA</h3>
               <p className="text-xl text-brand-plum font-normal leading-relaxed">
                 Escaneo instantáneo de imperfecciones para evaluar acné, manchas de sol, líneas de expresión e hiperpigmentación con alta precisión.
               </p>
@@ -152,7 +152,7 @@ export default async function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-rose/40 flex items-center justify-center text-brand-plum mb-6">
                 <Cpu className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-2xl font-bold mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
+              <h3 className="font-serif text-2xl font-semibold mb-3 text-brand-plum">ACTIVOS INTELIGENTES</h3>
               <p className="text-xl text-brand-plum font-normal leading-relaxed">
                 Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance celular de tu rostro.
               </p>
@@ -165,7 +165,7 @@ export default async function Home() {
               <div className="w-12 h-12 rounded-2xl bg-brand-lavender flex items-center justify-center text-brand-plum mb-6">
                 <Sparkle className="w-5 h-5" />
               </div>
-              <h3 className="font-serif text-2xl font-bold mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
+              <h3 className="font-serif text-2xl font-semibold mb-3 text-brand-plum">PRESCRIPCIÓN BOUTIQUE</h3>
               <p className="text-xl text-brand-plum font-normal leading-relaxed">
                 Rutinas y combinaciones personalizadas basadas en tu análisis biométrico, conectadas de forma dinámica a nuestro catálogo inteligente.
               </p>
@@ -182,8 +182,8 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:items-center justify-between">
           <div className="lg:max-w-md">
             <span className="text-base tracking-widest text-brand-plum uppercase font-extrabold block mb-3">TU RITUAL. TU PIEL. TU MEJOR VERSIÓN.</span>
-            <h2 className="font-serif text-5xl sm:text-6xl text-brand-plum font-bold leading-tight">
-              Beneficios que se ven, ciencia que se siente.
+            <h2 className="font-serif text-5xl sm:text-6xl text-brand-plum font-medium leading-tight">
+              Beneficios que se <span className="italic">ven</span>, ciencia que se <span className="italic">siente</span>.
             </h2>
           </div>
           <div className="grid sm:grid-cols-2 gap-6 lg:max-w-3xl w-full">
@@ -192,7 +192,7 @@ export default async function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-serif text-3xl font-bold text-brand-plum">Diagnóstico preciso</h4>
+                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Diagnóstico preciso</h4>
                 <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Tecnología U-Net para resultados analíticos confiables y mapeados al instante.</p>
               </div>
             </div>
@@ -201,7 +201,7 @@ export default async function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-serif text-3xl font-bold text-brand-plum">Personalización real</h4>
+                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Personalización real</h4>
                 <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Sugerencias exclusivas basadas en tu tipo de piel, imperfecciones y estilo de vida.</p>
               </div>
             </div>
@@ -210,7 +210,7 @@ export default async function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-serif text-3xl font-bold text-brand-plum">Resultados visibles</h4>
+                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Resultados visibles</h4>
                 <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Fórmulas activas y concentradas que trabajan a nivel celular desde el primer ritual.</p>
               </div>
             </div>
@@ -219,7 +219,7 @@ export default async function Home() {
                 <Check className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-serif text-3xl font-bold text-brand-plum">Seguridad & transparencia</h4>
+                <h4 className="font-serif text-3xl font-semibold text-brand-plum">Seguridad & transparencia</h4>
                 <p className="text-xl text-brand-plum font-medium leading-relaxed mt-1">Ingredientes probados, seguros de origen, sin parabenos ni componentes agresivos.</p>
               </div>
             </div>
@@ -232,8 +232,8 @@ export default async function Home() {
         <div className="flex justify-between items-end mb-12">
           <div>
             <span className="text-sm tracking-widest text-brand-plum uppercase block mb-3 font-extrabold">FÓRMULAS DESTACADAS</span>
-            <h2 className="font-serif text-5xl sm:text-6xl font-bold tracking-wide text-brand-plum">
-              Selección IA_Cosmetic
+            <h2 className="font-serif text-5xl sm:text-6xl font-medium tracking-wide text-brand-plum">
+              Selección <span className="italic">IA_Cosmetic</span>
             </h2>
           </div>
           <Link
@@ -263,9 +263,9 @@ export default async function Home() {
                 )}
               </div>
               <div className="p-6 flex flex-col flex-1">
-                <span className="text-[10px] text-brand-dusty-rose tracking-widest uppercase mb-1 font-semibold">{product.marca}</span>
-                <h3 className="font-serif text-2xl font-bold text-brand-plum mb-2 leading-snug">{product.nombre}</h3>
-                <p className="text-base text-brand-plum/80 font-normal leading-relaxed mb-6 flex-1 line-clamp-3">{product.descripcion}</p>
+                <span className="text-[10px] text-brand-plum/75 tracking-widest uppercase mb-1 font-semibold">{product.type}</span>
+                <h3 className="font-serif text-2xl font-semibold text-brand-plum mb-2 leading-snug">{product.name}</h3>
+                <p className="text-lg text-brand-plum font-medium leading-relaxed mb-6 flex-1">{product.description}</p>
                 <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
                   <span className="font-bold text-lg text-brand-plum">${product.precio.toFixed(2)}</span>
                   <Link 
