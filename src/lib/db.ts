@@ -172,11 +172,7 @@ export async function getProductsByImperfections(
 
     const productsToScore = mappedProducts.length > 0 ? mappedProducts : MOCK_PRODUCTS;
 
-    // --- ALGORITMO DE SCORING PONDERADO + DESEMPATE DE ESPECIFICIDAD (SIN LLM) ---
-    // 1. matchScore = suma de pesos de las anomalías que el usuario TIENE y el producto TRATA
-    // 2. jaccardSpec = (anomalías del usuario que trata) / (total de anomalías que trata el producto)
-    //    -> Desempata beneficiando productos enfocados/específicos sobre productos genéricos "multi-todo"
-    // 3. primaryCoverage = peso de la anomalía principal (mayor cantidad de px) tratada por el producto
+    // --- ALGORITMO DE SCORING PONDERADO + DESEMPATE DE ESPECIFICIDAD ---
     const scoredProducts = productsToScore.map(product => {
       const prodAnomaliesNorm = product.imperfecciones.map(imp =>
         imp.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -207,13 +203,19 @@ export async function getProductsByImperfections(
         finalScore,
         matchScore,
         jaccardSpec,
-        coversTopAnomaly
+        coversTopAnomaly,
+        matchedCount: matchedUserAnomalies.length
       };
     });
 
-    // Ordenar de mayor a menor score.
-    // En caso de empate en el score entre productos similares, aplicar rotación aleatoria para explorar los 150 productos del catálogo
-    scoredProducts.sort((a, b) => {
+    // Filtrar estrictamente: solo incluir productos que tratan AL MENOS UNA de las anomalías detectadas del usuario
+    const matchingOnlyScored = scoredProducts.filter(sp => {
+      if (normalizedAnomalies.length === 0) return true;
+      return sp.matchedCount > 0;
+    });
+
+    // Ordenar de mayor a menor score de afinidad
+    matchingOnlyScored.sort((a, b) => {
       const scoreDiff = b.finalScore - a.finalScore;
       if (Math.abs(scoreDiff) > 0.001) return scoreDiff;
       
@@ -223,15 +225,50 @@ export async function getProductsByImperfections(
       const specDiff = b.jaccardSpec - a.jaccardSpec;
       if (Math.abs(specDiff) > 0.001) return specDiff;
       
-      // Empate técnico: rotación aleatoria
-      return 0.5 - Math.random();
+      return 0;
     });
 
-    // Retornar todos los productos del catálogo ordenados por relevancia (sin recortar a 10)
-    return scoredProducts.map(sp => sp.product);
+    // Retornar solo los productos correspondientes a esas anomalías
+    return matchingOnlyScored.map(sp => sp.product);
 
   } catch (error) {
     console.error('Database query error details:', error);
+    return MOCK_PRODUCTS;
+  }
+}
+
+export async function getAllProducts(): Promise<SkincareProduct[]> {
+  try {
+    const rawProducts = await prisma.producto.findMany({
+      include: {
+        productoImperfeccion: {
+          include: {
+            imperfeccion: true
+          }
+        }
+      },
+      orderBy: {
+        nombre: 'asc'
+      }
+    });
+
+    if (!rawProducts || rawProducts.length === 0) {
+      return MOCK_PRODUCTS;
+    }
+
+    return rawProducts.map(p => ({
+      id: String(p.id),
+      nombre: p.nombre,
+      marca: p.marca || 'IA_Cosmetic',
+      descripcion: p.descripcion || '',
+      precio: p.precio ? Number(p.precio) : 0,
+      imagenUrl: p.imagenUrl || '/products/default.png',
+      imperfecciones: Array.isArray(p.productoImperfeccion)
+        ? p.productoImperfeccion.map(pi => pi.imperfeccion?.nombre || '')
+        : []
+    }));
+  } catch (error) {
+    console.error('Error fetching all products:', error);
     return MOCK_PRODUCTS;
   }
 }

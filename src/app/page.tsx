@@ -2,42 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { Camera, Sparkles, Check, Cpu, Sparkle } from "lucide-react";
 import Logo from "@/components/Logo";
+import { getAllProducts } from "@/lib/db";
 
-export default function Home() {
-  const showcaseProducts = [
-    {
-      name: "Clarité Serum",
-      type: "Fórmula Activa",
-      description: "Niacinamida 10% + Zinc PCA. Trata acné y manchas regulando el sebo y unificando el tono.",
-      price: "$38.00",
-      image: "/products/niacinamide.png",
-      tag: "Acné & Manchas"
-    },
-    {
-      name: "Lumière Cream",
-      type: "Tratamiento Reparador",
-      description: "Retinol Encapsulado + Péptidos. Estimula la renovación celular y suaviza arrugas de expresión.",
-      price: "$52.00",
-      image: "/products/retinol.png",
-      tag: "Anti-Edad"
-    },
-    {
-      name: "Hydra Balance",
-      type: "Restaurador Profundo",
-      description: "Ácido Hialurónico + Ceramidas. Retiene la humedad y fortalece la barrera protectora de la piel.",
-      price: "$48.00",
-      image: "/products/multipeptides.png",
-      tag: "Hidratación"
-    },
-    {
-      name: "Barrier Repair",
-      type: "Calmante Activo",
-      description: "Centella Asiática + Probióticos. Reduce rojeces, desinflama y equilibra el microbioma cutáneo.",
-      price: "$45.00",
-      image: "/products/vitc.png",
-      tag: "Barrera"
-    }
-  ];
+export default async function Home() {
+  const allProducts = await getAllProducts();
+  const showcaseProducts = allProducts.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#F7F4F1] flex flex-col selection:bg-brand-dusty-rose/30 text-brand-plum font-sans">
@@ -48,7 +17,7 @@ export default function Home() {
         </Link>
         <nav className="hidden md:flex gap-8 items-center text-sm sm:text-base tracking-[0.15em] font-bold text-brand-plum">
           <a href="#metodo" className="hover:text-brand-plum transition-colors duration-300">EL MÉTODO</a>
-          <a href="#productos" className="hover:text-brand-plum transition-colors duration-300">PRODUCTOS</a>
+          <Link href="/catalogo" className="hover:text-brand-plum transition-colors duration-300">PRODUCTOS</Link>
           <Link 
             href="/diagnostico" 
             className="bg-brand-plum text-[#F7F4F1] px-6 py-3 rounded-full hover:bg-brand-dusty-rose hover:text-brand-plum transition-all duration-300 hover:shadow-md font-bold tracking-widest text-xs sm:text-sm"
@@ -89,12 +58,12 @@ export default function Home() {
               <Camera className="w-4 h-4 transition-transform group-hover:scale-110" />
               INICIAR DIAGNÓSTICO &rarr;
             </Link>
-            <a
-              href="#productos"
+            <Link
+              href="/catalogo"
               className="flex items-center justify-center border border-brand-dusty-rose text-brand-plum px-8 py-4 rounded-full text-xs tracking-widest font-bold hover:bg-brand-rose/20 transition-all duration-300"
             >
               VER CATÁLOGO
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -187,9 +156,9 @@ export default function Home() {
               <p className="text-xl text-brand-plum font-normal leading-relaxed">
                 Ingredientes clínicamente respaldados seleccionados mediante IA para responder directamente a las necesidades y balance celular de tu rostro.
               </p>
-              <a href="#productos" className="inline-flex items-center gap-1.5 text-base tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
+              <Link href="/catalogo" className="inline-flex items-center gap-1.5 text-base tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300 mt-6 uppercase">
                 Conocer más &rarr;
-              </a>
+              </Link>
             </div>
 
             <div className="bg-white p-8 rounded-[2rem] border border-brand-dusty-rose/20 shadow-sm hover:shadow-md transition-all duration-300">
@@ -268,7 +237,7 @@ export default function Home() {
             </h2>
           </div>
           <Link
-            href="/diagnostico"
+            href="/catalogo"
             className="hidden sm:inline-flex items-center gap-1.5 text-xs tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"
           >
             VER CATÁLOGO COMPLETO &rarr;
@@ -276,30 +245,29 @@ export default function Home() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {showcaseProducts.map((product, index) => (
+          {showcaseProducts.map((product) => (
             <div 
-              key={index} 
+              key={product.id} 
               className="bg-white border border-brand-dusty-rose/20 rounded-[2rem] overflow-hidden hover:shadow-xl hover:border-brand-dusty-rose transition-all duration-500 group flex flex-col h-full shadow-sm"
             >
-              <div className="relative aspect-[4/5] w-full bg-brand-sand/20 overflow-hidden border-b border-brand-dusty-rose/10">
-                <Image 
-                  src={product.image} 
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-contain p-4 transition-transform duration-700 group-hover:scale-105"
-                  priority
+              <div className="relative aspect-[4/5] w-full bg-brand-sand/20 overflow-hidden border-b border-brand-dusty-rose/10 flex items-center justify-center p-4">
+                <img 
+                  src={product.imagenUrl || '/products/default.png'} 
+                  alt={product.nombre}
+                  className="max-h-full max-w-full object-contain transition-transform duration-700 group-hover:scale-105"
                 />
-                <span className="absolute top-4 left-4 bg-brand-lavender text-brand-plum border border-brand-dusty-rose/40 px-3 py-1 rounded-full text-[9px] tracking-widest font-bold uppercase z-10">
-                  {product.tag}
-                </span>
+                {product.imperfecciones.length > 0 && (
+                  <span className="absolute top-4 left-4 bg-brand-lavender text-brand-plum border border-brand-dusty-rose/40 px-3 py-1 rounded-full text-[9px] tracking-widest font-bold uppercase z-10">
+                    {product.imperfecciones[0]}
+                  </span>
+                )}
               </div>
               <div className="p-6 flex flex-col flex-1">
-                <span className="text-[10px] text-brand-dusty-rose tracking-widest uppercase mb-1 font-semibold">{product.type}</span>
-                <h3 className="font-serif text-2xl font-bold text-brand-plum mb-2 leading-snug">{product.name}</h3>
-                <p className="text-lg text-brand-plum font-medium leading-relaxed mb-6 flex-1">{product.description}</p>
+                <span className="text-[10px] text-brand-dusty-rose tracking-widest uppercase mb-1 font-semibold">{product.marca}</span>
+                <h3 className="font-serif text-2xl font-bold text-brand-plum mb-2 leading-snug">{product.nombre}</h3>
+                <p className="text-base text-brand-plum/80 font-normal leading-relaxed mb-6 flex-1 line-clamp-3">{product.descripcion}</p>
                 <div className="flex justify-between items-center border-t border-brand-dusty-rose/10 pt-4">
-                  <span className="font-bold text-lg text-brand-plum">{product.price}</span>
+                  <span className="font-bold text-lg text-brand-plum">${product.precio.toFixed(2)}</span>
                   <Link 
                     href="/diagnostico" 
                     className="text-sm tracking-widest font-bold text-brand-plum hover:text-brand-dusty-rose transition-colors duration-300"

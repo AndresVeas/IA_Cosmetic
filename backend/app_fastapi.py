@@ -1,5 +1,7 @@
 import os
 import base64
+from datetime import datetime
+import uuid
 import numpy as np
 import cv2
 import onnxruntime as ort
@@ -261,6 +263,42 @@ def analyze_skin(payload: AnalysisRequest):
         _, encoded_img = cv2.imencode(".png", overlay_mask)
         mask_base64 = base64.b64encode(encoded_img).decode("utf-8")
         mask_image_url = f"data:image/png;base64,{mask_base64}"
+
+        # Guardar las imágenes procesadas ÚNICAMENTE si se detectó al menos 1 anomalía (no guardar pieles sin detecciones)
+        if len(anomalies_detected) > 0:
+            try:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                unique_id = uuid.uuid4().hex[:6]
+                scan_tag = f"scan_{timestamp}_{unique_id}"
+
+                base_project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                photos_dir = os.path.join(base_project_dir, "images", "photos")
+                results_dir = os.path.join(base_project_dir, "images", "results")
+                mask_dir = os.path.join(base_project_dir, "images", "mask")
+
+                os.makedirs(photos_dir, exist_ok=True)
+                os.makedirs(results_dir, exist_ok=True)
+                os.makedirs(mask_dir, exist_ok=True)
+
+                # 1. Foto original (_photo.jpg)
+                cv2.imwrite(os.path.join(photos_dir, f"{scan_tag}_photo.jpg"), cv2.cvtColor(face_512, cv2.COLOR_RGB2BGR))
+
+                # 2. Máscara pura (_mask.png)
+                cv2.imwrite(os.path.join(mask_dir, f"{scan_tag}_mask.png"), cv2.cvtColor(overlay_mask, cv2.COLOR_RGBA2BGRA))
+
+                # 3. Resultado con máscara superpuesta (_result.jpg)
+                result_img = face_512.copy()
+                alpha = overlay_mask[:, :, 3] / 255.0
+                for c_idx in range(3):
+                    result_img[:, :, c_idx] = (
+                        (1.0 - alpha) * result_img[:, :, c_idx] + alpha * overlay_mask[:, :, c_idx]
+                    ).astype(np.uint8)
+                cv2.imwrite(os.path.join(results_dir, f"{scan_tag}_result.jpg"), cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR))
+                print(f"[IMAGES] Imágenes guardadas con tag '{scan_tag}' ({len(anomalies_detected)} anomalías detectadas: {list(anomalies_detected)})")
+            except Exception as img_err:
+                print(f"[IMAGES ERROR] Error al guardar imágenes de inferencia: {str(img_err)}")
+        else:
+            print("[IMAGES] Inferencia sin anomalías detectadas. No se guardan imágenes a disco.")
 
         return {
             "anomalies": list(anomalies_detected),

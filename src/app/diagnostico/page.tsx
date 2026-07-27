@@ -430,10 +430,16 @@ export default function DiagnosticoPage() {
             )}
 
             {isCameraActive && (
-              <div className={styles.belowActions}>
-                <button className={styles.primaryButton} onClick={capturePhoto}><Camera /> Tomar foto</button>
-                <button className={styles.secondaryButton} onClick={stopCamera}>Cancelar</button>
-              </div>
+              <>
+                <div className={styles.privacyNote} style={{ marginBottom: '14px', background: 'rgba(247, 244, 241, 0.95)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', color: 'var(--plum)', fontSize: '12px', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <LockKeyhole size={16} style={{ flexShrink: 0, color: 'var(--plum)' }} />
+                  <span><strong>Aviso de Privacidad:</strong> La fotografía capturada será almacenada de forma segura únicamente para mejorar nuestro servicio de análisis. No se realizará la distribución ni divulgación de tus imágenes.</span>
+                </div>
+                <div className={styles.belowActions}>
+                  <button className={styles.primaryButton} onClick={capturePhoto}><Camera /> Tomar foto</button>
+                  <button className={styles.secondaryButton} onClick={stopCamera}>Cancelar</button>
+                </div>
+              </>
             )}
 
             {capturedImage && !isAnalyzing && (
@@ -555,7 +561,7 @@ export default function DiagnosticoPage() {
                 onClick={() => setVisibleProductsCount(prev => prev + 15)}
                 style={{ padding: '0 36px', height: '52px', fontSize: '15px', borderRadius: '999px', cursor: 'pointer' }}
               >
-                Ver más recomendaciones ({results.products.length - visibleProductsCount} restantes)
+                Ver más recomendaciones
               </button>
             </div>
           )}

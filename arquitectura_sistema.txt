@@ -1,0 +1,190 @@
+================================================================================
+           ANÁLISIS ARQUITECTÓNICO DE SOFTWARE Y FLUJO DE DATOS
+                         SISTEMA IA_COSMETIC
+================================================================================
+
+1. VISIÓN GENERAL Y ESTILO ARQUITECTÓNICO DEL SISTEMA
+--------------------------------------------------------------------------------
+El sistema IA_Cosmetic está estructurado bajo una arquitectura de microservicios y 
+BFF (Backend-For-Frontend) desacoplada, orientada al procesamiento de visión por 
+computador y recomendación personalizada en tiempo real. 
+
+El sistema consta de 3 capas o servicios principales:
+
+1. CAPA DE PRESENTACIÓN Y ORQUESTACIÓN (Frontend & Serverless BFF):
+   Desarrollada en Next.js 16 (React 19 / TypeScript). Cumple el rol de interfaz de 
+   usuario reactiva para la captura de video en vivo / archivos y actúa como BFF 
+   (Backend-For-Frontend) que consolida el análisis de IA con el catálogo de productos.
+
+2. CAPA DE INFERENCIA DE INTELIGENCIA ARTIFICIAL (Backend de Visión Computacional):
+   Construida sobre FastAPI (Python 3.10+) ejecutada en un contenedor Docker con 
+   ONNX Runtime y OpenCV. Se encarga exclusivamente del decodificado, preprocesamiento 
+   matricial de imágenes, inferencia por segmentación semántica mediante el modelo 
+   U-Net (ResNet34) y postprocesamiento estadístico/geométrico de anomalías.
+
+3. CAPA DE PERSISTENCIA Y DATOS (Base de Datos Relacional):
+   Base de datos PostgreSQL en la nube (Neon Database) gestionada a través del ORM 
+   Prisma 6. Almancena el catálogo de productos dermocosméticos y sus relaciones con 
+   las imperfecciones cutáneas.
+
+
+2. STACK TECNOLÓGICO Y HERRAMIENTAS UTILIZADAS
+--------------------------------------------------------------------------------
+[FRONTEND & CLIENTE]
+- Framework Frontend: Next.js 16.2 (App Router, Server Components & Client Components).
+- Biblioteca de UI: React 19.2.
+- Lenguaje: TypeScript 5.
+- Estilos: Vanilla CSS Modules con variables CSS nativas y diseño responsivo.
+- Componentes de Iconografía: Lucide React.
+- Captura de Imagen: HTML5 Canvas API & MediaDevices Web API (getUserMedia).
+
+[BACKEND DE PRESENTACIÓN / BFF]
+- Entorno de Ejecución: Node.js (Next.js API Routes en /api/analyze).
+- ORM de Base de Datos: Prisma Client v6.19.
+- Adaptador de Conexión: Prisma Client Neon / PostgreSQL Driver.
+
+[BACKEND DE INFERENCIA IA]
+- Framework Web de Inferencia: FastAPI (Python).
+- Servidor ASGI: Uvicorn (configurado con múltiples worker processes).
+- Motor de Inferencia IA: ONNX Runtime (proveedor de ejecución CPUExecutionProvider).
+- Tratamiento Digital de Imágenes: OpenCV (cv2) y NumPy.
+- Validación de Datos: Pydantic v2.
+
+[MODELO DE RED NEURONAL]
+- Arquitectura de Red: U-Net de Segmentación Semántica con Encoder ResNet34.
+- Origen del Modelo: Entrenado en PyTorch (segmentation_models_pytorch), exportado a 
+  formato optimizado ONNX (assemble_super.onnx).
+- Salida de la Red: Tensor multi-canal [1, 4, 512, 512] (4 clases: Fondo/Piel sana, 
+  Acné, Manchas/Hiperpigmentación, Arrugas/Líneas).
+
+[BASE DE DATOS E INFRAESTRUCTURA]
+- Motor de BD: PostgreSQL (Neon Serverless Cloud Database).
+- Contenedorización: Docker & Docker Compose.
+- Exposición Pública / Túnel: Ngrok (ngrok/ngrok:latest) para interconexión segura.
+
+
+3. FLUJO DE DATOS EXTREMO A EXTREMO (END-TO-END DATA FLOW)
+--------------------------------------------------------------------------------
+
+[PASO 1: CAPTURA E INTERACCIÓN EN EL CLIENTE (FRONTEND)]
+- El usuario accede a la sección de diagnóstico (/diagnostico) desde su navegador o teléfono.
+- El cliente activa la cámara usando la API navigator.mediaDevices.getUserMedia o permite 
+  cargar una imagen local (JPEG/PNG).
+- Se aplica un control visual con encuadre cuadrado 1:1 y zoom facial digital seleccionable.
+- Al presionar "Analizar Piel", se dibuja la toma dentro de un elemento <canvas> HTML5 
+  desplegado a 1080x1080 píxeles.
+- La imagen se exporta como una cadena codificada en Base64 (Data URL formato image/jpeg).
+
+[PASO 2: RECEPCIÓN Y PETICIÓN AL BFF (/api/analyze)]
+- El frontend realiza un POST HTTP a la ruta /api/analyze de Next.js enviando la imagen Base64.
+- La API de Next.js valida el payload y actúa como un proxy/orquestador resiliente.
+- Reenvía el paquete JSON { "image": base64String } hacia el Backend de FastAPI 
+  (disponible en http://localhost:8000/analyze o mediante la variable FASTAPI_URL).
+- Posee un mecanismo de "Fallback Simulado" en caso de que el backend de Python no 
+  esté en ejecución o presente fallos de red.
+
+[PASO 3: PREPROCESAMIENTO DE LA FOTO EN FASTAPI (PYTHON + OPENCV)]
+Cuando la imagen llega al endpoint /analyze de FastAPI, pasa por las siguientes 
+etapas de preprocesamiento antes de tocar la red neuronal:
+
+1. Decodificación Base64:
+   - Se remueve la cabecera MIME y se convierte la cadena base64 en un buffer de bytes.
+   - cv2.imdecode transforma el buffer en una matriz NumPy tridimensional en espacio BGR.
+   - Se convierte de BGR a espacio de color RGB (cv2.COLOR_BGR2RGB).
+
+2. Estandarización de Resolución a 512x512:
+   - Toda foto recibida (4K, 1080p, etc.) se redimensiona exactamente a 512x512 píxeles 
+     (utilizando cv2.INTER_AREA para reducción o cv2.INTER_CUBIC para ampliación).
+   - Esto garantiza que las imperfecciones se evalúen exactamente en la misma escala espacial 
+     con la que se entrenó la U-Net.
+
+3. Delimitación de Región Facial (ROI - Region of Interest):
+   - Se recorta el área central del rostro (~92% del marco, descartando bordes externos 4%).
+   - Se redimensiona el ROI recortado a la resolución de 512x512.
+
+4. Mejora Adaptativa de Contraste (CLAHE en espacio LAB):
+   - Para contrarrestar la iluminación tenue o sombras difusas causadas por webcams, la 
+     imagen del rostro se convierte al espacio de color LAB (cv2.COLOR_RGB2LAB).
+   - Se aplica la técnica CLAHE (Contrast Limited Adaptive Histogram Equalization) 
+     exclusivamente sobre el canal L (Luminancia) con un umbral clipLimit=1.3 y mosaico 8x8.
+   - Se reconvierte la imagen a RGB. Esto acentúa las texturas sutiles de la piel (poros, 
+     manchas e hiperpigmentación) sin distorsionar el tono ni generar artefactos visuales.
+
+5. Normalización Estándar ImageNet:
+   - Los valores de píxel (0 a 255) se dividen entre 255.0 para escalar a [0.0, 1.0].
+   - Se sustrae la media y se divide por la desviación estándar de ImageNet:
+     Media: [0.485, 0.456, 0.406], Desviación Estándar: [0.229, 0.224, 0.225].
+
+6. Transformación de Tensores para ONNX:
+   - La matriz cambia de formato HWC (512, 512, 3) a NCHW (1, 3, 512, 512) de tipo float32.
+
+[PASO 4: INFERENCIA DE SEGMENTACIÓN SEMÁNTICA CON ONNX RUNTIME]
+- El tensor preparado entra a la sesión de ONNX (ort_session.run).
+- El modelo U-Net (assemble_super.onnx) procesa la imagen en CPU Execution Provider.
+- Genera un tensor de logits de salida con dimensiones [1, 4, 512, 512], donde los 4 
+  canales representan:
+    * Canal 0: Fondo / Piel Sana
+    * Canal 1: Acné (Pápulas / Pústulas / Comedones)
+    * Canal 2: Manchas (Hiperpigmentación / Lentigos / Sol)
+    * Canal 3: Arrugas (Líneas de expresión / Perioculares)
+
+[PASO 5: POSTPROCESAMIENTO, MASKS Y EXTRACCIÓN GEOMÉTRICA]
+- Reconstrucción de Logits: Se mapean los logits inferidos a la grilla de 512x512.
+- Aplicación de Softmax: Se calcula la distribución de probabilidad exponencial por píxel.
+- Filtrado por Óvalo Facial: Se aplica una máscara elíptica anatómica (cv2.ellipse) centrada 
+  en la imagen (256, 256) para descartar falsos positivos producidos por el cabello, ropa o fondo.
+- Umbralización de Confianza y Apertura Morfológica por Clase:
+    * Acné: Umbral de confianza >= 0.25, apertura elíptica 3x3, área mínima = 15 px.
+    * Manchas: Umbral de confianza >= 0.35 (más exigente para evitar sombras de pómulos), 
+      apertura elíptica 5x5, área mínima = 60 px.
+    * Arrugas: Umbral de confianza >= 0.25, apertura elíptica 3x3, área mínima = 15 px.
+- Detección de Contornos (cv2.findContours):
+    * Se extraen los contornos de cada área afectada.
+    * Se calcula el centroide de masa (momentos M10/M00) y el radio envolvente.
+    * Se categoriza la severidad de cada foco: Leve (<50 px), Moderado (50-200 px), Severo (>200 px).
+    * Se calcula el nivel de confianza promedio (en %) por cada foco individual.
+- Generación de la Máscara Transparente RGBA:
+    * Se crea una imagen RGBA de 512x512 donde se colorean los píxeles según la clase:
+      - Acné: Tono Púrpura (RGBA: 115, 111, 231, 140)
+      - Manchas: Tono Verde (RGBA: 131, 167, 72, 140)
+      - Arrugas: Tono Rosado (RGBA: 232, 117, 137, 140)
+    * Se codifica en PNG Base64 (data:image/png;base64,...).
+- Conteo de Píxeles (pixelCounts): Se cuantifica la masa de píxeles afectados por condición.
+
+[PASO 6: ALGORITMO DE RECOMENDACIÓN DE PRODUCTOS (NEXT.JS + NEON POSTGRESQL)]
+FastAPI responde a Next.js con el JSON { anomalies, visualOverlay, maskImage, pixelCounts }. 
+A continuación, Next.js ejecuta las siguientes tareas:
+
+1. Narrativa Diagnóstica: Genera un resumen explicativo automático según la combinación de 
+   afecciones detectadas (ej. combinación Acné + Manchas -> tratamiento con Niacinamida).
+2. Consulta Ponderada a la Base de Datos Neon (Prisma ORM):
+   - Se calcula el peso porcentual de cada imperfección según el volumen de píxeles (pixelCounts).
+   - Se buscan en PostgreSQL todos los productos que traten al menos una de las afecciones.
+3. Scoring Compuesto y Criterio de Especificidad (Jaccard Similarity):
+   - matchScore: Suma de los pesos de las afecciones del usuario que cubre el producto.
+   - jaccardSpec = (anomalías coincidentes del usuario) / (total de imperfecciones declaradas por el producto).
+     -> Este factor desempata beneficiando productos enfocados y específicos sobre productos genéricos.
+   - coversTopAnomaly: Bonificación si el producto ataca la afección con mayor masa de píxeles.
+   - Score Final = (matchScore * 1000) + (jaccardSpec * 100) + (coversTopAnomaly * 10).
+   - En empates técnicos se aplica una rotación aleatoria para permitir la exploración del catálogo completo.
+
+[PASO 7: RESPUESTA FINAL Y RENDEREIZADO EN EL FRONTEND]
+Next.js entrega la respuesta al navegador cliente. La página /diagnostico renderiza:
+- Vista comparativa de la foto tomada con conmutador (Toggle) para activar/desactivar la máscara 
+  PNG de segmentación.
+- Puntos de interés interactivos (Visual Overlay) colocados sobre las coordenadas exactas de 
+  cada foco con etiqueta de severidad y confianza %.
+- Panel de Diagnóstico Dermocosmético con lectura cuantitativa de la piel.
+- Catálogo de productos recomendados ordenados jerárquicamente por el algoritmo de relevancia.
+
+
+4. ARQUITECTURA DE CONTENEDORES Y PUERTOS DE COMUNICACIÓN
+--------------------------------------------------------------------------------
+- Frontend / Next.js API Routes:  http://localhost:3000
+- Backend FastAPI (Docker):       http://localhost:8000 (Contenedor: cosmetic-ia-backend)
+- Ngrok Tunnel (Docker):          https://stonewall-bountiful-steep.ngrok-free.dev -> fastapi-ia:8000
+- Base de Datos Neon Cloud DB:    Conexión mediante SSL PostgreSQL String (DATABASE_URL)
+
+================================================================================
+                    FIN DEL DOCUMENTO DE ARQUITECTURA
+================================================================================
