@@ -521,7 +521,7 @@ export default function DiagnosticoPage() {
         </aside>
       </div>
 
-      {hasResult && results && (
+      {hasResult && results && results.products && results.products.length > 0 && (
         <section className={styles.productShelf} aria-labelledby="recommended-products-title">
           <div className={styles.productShelfHeading}>
             <div>

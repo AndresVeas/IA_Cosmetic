@@ -272,6 +272,11 @@ def analyze_skin(payload: AnalysisRequest):
                 scan_tag = f"scan_{timestamp}_{unique_id}"
 
                 base_project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                if not os.path.exists(os.path.join(base_project_dir, "images")):
+                    backend_dir = os.path.dirname(os.path.abspath(__file__))
+                    if os.path.exists(os.path.join(backend_dir, "images")):
+                        base_project_dir = backend_dir
+
                 photos_dir = os.path.join(base_project_dir, "images", "photos")
                 results_dir = os.path.join(base_project_dir, "images", "results")
                 mask_dir = os.path.join(base_project_dir, "images", "mask")

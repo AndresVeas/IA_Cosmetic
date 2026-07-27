@@ -208,11 +208,13 @@ export async function getProductsByImperfections(
       };
     });
 
+    // Si no hay anomalías detectadas en la piel, NO se muestra ningún producto
+    if (normalizedAnomalies.length === 0) {
+      return [];
+    }
+
     // Filtrar estrictamente: solo incluir productos que tratan AL MENOS UNA de las anomalías detectadas del usuario
-    const matchingOnlyScored = scoredProducts.filter(sp => {
-      if (normalizedAnomalies.length === 0) return true;
-      return sp.matchedCount > 0;
-    });
+    const matchingOnlyScored = scoredProducts.filter(sp => sp.matchedCount > 0);
 
     // Ordenar de mayor a menor score de afinidad
     matchingOnlyScored.sort((a, b) => {
@@ -228,8 +230,8 @@ export async function getProductsByImperfections(
       return 0;
     });
 
-    // Retornar solo los productos correspondientes a esas anomalías
-    return matchingOnlyScored.map(sp => sp.product);
+    // Retornar hasta 30 productos correspondientes a esas anomalías
+    return matchingOnlyScored.map(sp => sp.product).slice(0, 30);
 
   } catch (error) {
     console.error('Database query error details:', error);
