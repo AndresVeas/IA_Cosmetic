@@ -238,9 +238,23 @@ export default function DiagnosticoPage() {
     const reader = new FileReader();
     reader.onload = (loadEvent) => {
       const dataUrl = loadEvent.target?.result as string;
-      setCapturedImage(dataUrl);
-      stopCamera();
-      analyzeSkin(dataUrl);
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const minSize = Math.min(img.width, img.height);
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const startX = (img.width - minSize) / 2;
+        const startY = (img.height - minSize) / 2;
+        ctx.drawImage(img, startX, startY, minSize, minSize, 0, 0, 1080, 1080);
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        setCapturedImage(croppedDataUrl);
+        stopCamera();
+        analyzeSkin(croppedDataUrl);
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };

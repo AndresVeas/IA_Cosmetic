@@ -91,39 +91,39 @@ def analyze_skin(payload: AnalysisRequest):
         if img is None:
             raise ValueError("No se pudo decodificar la imagen recibida.")
             
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        h_orig, w_orig = img.shape[:2]
 
-        # 2. Estandarizar la imagen recibida a la resolución nativa 512x512 del dataset de la U-Net
-        # Esto garantiza que fotos de celulares (1080p, 4K) tengan exactamente la misma escala de arrugas/manchas que el entrenamiento.
-        h_orig, w_orig = img_rgb.shape[:2]
-        if h_orig != 512 or w_orig != 512:
-            img_rgb = cv2.resize(img_rgb, (512, 512), interpolation=cv2.INTER_AREA if (h_orig > 512) else cv2.INTER_CUBIC)
-            h_orig, w_orig = 512, 512
+        # Recorte del cuadrado central 1:1 en caso de recibir una foto rectangular para evitar deformar las proporciones del rostro
+        if h_orig != w_orig:
+            min_dim = min(h_orig, w_orig)
+            start_x = (w_orig - min_dim) // 2
+            start_y = (h_orig - min_dim) // 2
+            img = img[start_y : start_y + min_dim, start_x : start_x + min_dim]
+            h_orig, w_orig = min_dim, min_dim
 
-        # Delimitar la región del rostro alineada al marco 1:1 (~92-96% del encuadre)
-        min_x_f = int(w_orig * 0.04)
-        max_x_f = int(w_orig * 0.96)
-        min_y_f = int(h_orig * 0.04)
-        max_y_f = int(h_orig * 0.96)
-        
+        # 1. Redimensionar el encuadre cuadrado 1:1 a 512x512 sin deformación
+        img_512_bgr = cv2.resize(img, (512, 512), interpolation=cv2.INTER_AREA if (h_orig > 512) else cv2.INTER_CUBIC)
+
+        # 2. Extraer región facial magnificada (zoom interno para máxima sensibilidad de la U-Net)
+        min_x_f = int(512 * 0.04)
+        max_x_f = int(512 * 0.96)
+        min_y_f = int(512 * 0.04)
+        max_y_f = int(512 * 0.96)
         w_face = max_x_f - min_x_f
         h_face = max_y_f - min_y_f
-        
-        # Extraer región facial de la imagen original en alta resolución
-        face_img_raw = img_rgb[min_y_f : max_y_f, min_x_f : max_x_f]
-        
-        # --- MODO U-NET DIRECTO PURO (SIN MULTI-PASADAS) ---
-        # 1. Redimensionar la imagen limpia del rostro a 512x512 (resolución nativa U-Net)
-        face_512 = cv2.resize(face_img_raw, (512, 512), interpolation=cv2.INTER_CUBIC)
 
-        # 2. Ecualización de contraste CLAHE en canal L (LAB) para mejorar detección en webcam
-        lab = cv2.cvtColor(face_512, cv2.COLOR_RGB2LAB)
+        face_img_raw = img_512_bgr[min_y_f : max_y_f, min_x_f : max_x_f]
+        face_512_bgr_zoomed = cv2.resize(face_img_raw, (512, 512), interpolation=cv2.INTER_CUBIC)
+
+        # 3. Ecualización de contraste CLAHE en canal L (LAB) sobre la imagen magnificada
+        img_rgb_for_model = cv2.cvtColor(face_512_bgr_zoomed, cv2.COLOR_BGR2RGB)
+        lab = cv2.cvtColor(img_rgb_for_model, cv2.COLOR_RGB2LAB)
         l_ch, a_ch, b_ch = cv2.split(lab)
         clahe = cv2.createCLAHE(clipLimit=1.3, tileGridSize=(8, 8))
         l_eq = clahe.apply(l_ch)
         face_512_eq = cv2.cvtColor(cv2.merge((l_eq, a_ch, b_ch)), cv2.COLOR_LAB2RGB)
 
-        # 3. Normalización estándar ImageNet sobre la imagen ecualizada
+        # 4. Normalización estándar ImageNet sobre la imagen magnificada
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         face_norm = (face_512_eq / 255.0 - mean) / std
@@ -133,28 +133,27 @@ def analyze_skin(payload: AnalysisRequest):
         input_name = ort_session.get_inputs()[0].name
         output_name = ort_session.get_outputs()[0].name
 
-        # 3. Una sola pasada limpia y directa con la U-Net (assemble_super.onnx)
+        # 5. Inferencia con la U-Net sobre el rostro magnificado
         raw_logits_512 = ort_session.run([output_name], {input_name: batch_pure})[0][0]  # Shape: [4, 512, 512]
 
-        # Reconstruir los logits en la imagen completa de 512x512
+        # 6. Reconstruir los logits magnificados en las coordenadas originales del canvas 1:1 (512x512)
         final_logits = np.zeros((4, 512, 512), dtype=np.float32)
-        final_logits[0] = 2.0  # Logit de fondo neutro fuera del área facial
+        final_logits[0] = 2.0  # Logit de fondo neutro
         final_logits[1:] = -10.0
 
-        # Redimensionar logits de la inferencia al tamaño de la región facial recortada
         final_logits_face = np.zeros((4, h_face, w_face), dtype=np.float32)
         for c in range(4):
             final_logits_face[c] = cv2.resize(raw_logits_512[c], (w_face, h_face), interpolation=cv2.INTER_LINEAR)
 
-        # Insertar los logits de la cara en sus coordenadas originales dentro del canvas 512x512
         final_logits[:, min_y_f : max_y_f, min_x_f : max_x_f] = final_logits_face
 
-        # Calcular softmax para obtener probabilidades de confianza por píxel a 512x512
+        # 7. Calcular softmax y argmax sobre la imagen completa 1:1
         logits_exp = np.exp(final_logits - np.max(final_logits, axis=0, keepdims=True))
         probs = logits_exp / np.sum(logits_exp, axis=0, keepdims=True)  # Shape: [4, 512, 512]
-
-        # Obtener la predicción de la clase ganadora (argmax)
         prediction_scaled = np.argmax(final_logits, axis=0).astype(np.uint8)  # Shape: [512, 512]
+
+        # Definir la imagen base BGR no deformada para visualización y guardado
+        face_512_bgr = img_512_bgr
         
         # --- FILTRAR DETECCIONES FUERA DE LA GUÍA FACIAL (512x512) ---
         face_guide_mask = np.zeros((512, 512), dtype=np.uint8)
@@ -171,13 +170,19 @@ def analyze_skin(payload: AnalysisRequest):
         classes_map = {1: "acne", 2: "manchas", 3: "arrugas"}
         labels_map = {1: "Acné", 2: "Hiperpigmentación", 3: "Línea/Arruga"}
         
-        # Generar la máscara de segmentación en formato RGBA (base64)
+        # Generar la máscara de segmentación en formato BGRA nativo de OpenCV (para visualización web base64)
         overlay_mask = np.zeros((512, 512, 4), dtype=np.uint8)
+        # Generar la máscara de mapa de bits indexada (0: Fondo, 1: Acné, 2: Manchas, 3: Arrugas) para reentrenamiento U-Net
+        indexed_mask = np.zeros((512, 512), dtype=np.uint8)
         
+        # Colores BGRA (Blue, Green, Red, Alpha) alineados con el sistema de diseño web:
+        # 1: Acné -> Rojo Coral (#e76f73) -> B=115, G=111, R=231, A=140
+        # 2: Manchas -> Verde Esmeralda (#48a783) -> B=131, G=167, R=72, A=140
+        # 3: Arrugas -> Morado/Púrpura (#8975e8) -> B=232, G=117, R=137, A=140
         color_map = {
-            1: [115, 111, 231, 140],  # acne
-            2: [131, 167, 72, 140],   # manchas
-            3: [232, 117, 137, 140]   # arrugas
+            1: [115, 111, 231, 140],  # acne (rojo coral #e76f73 en BGRA)
+            2: [131, 167, 72, 140],   # manchas (verde esmeralda #48a783 en BGRA)
+            3: [232, 117, 137, 140]   # arrugas (morado púrpura #8975e8 en BGRA)
         }
         
         # Umbrales por clase: manchas necesita más confianza para evitar sombras naturales del pómulo/ojeras
@@ -186,11 +191,12 @@ def analyze_skin(payload: AnalysisRequest):
         min_area = {1: 15, 2: 60, 3: 15}  # acne, manchas, arrugas
         
         pixel_counts = {}
-        for class_id, class_name in classes_map.items():
-            raw_class_mask = (prediction_scaled == class_id).astype(np.uint8)
-            
-            # Filtrar por confianza con umbral específico por clase
-            raw_class_mask[probs[class_id] < conf_thresholds[class_id]] = 0
+        # Procesar en orden 2 (Manchas) -> 3 (Arrugas) -> 1 (Acné) para que el Acné (lesión clínica activa) tenga máxima prioridad en solapamientos
+        classes_order = [2, 3, 1]
+        for class_id in classes_order:
+            class_name = classes_map[class_id]
+            # Evaluar la máscara de probabilidades directa de cada clase para detectar focos reales sin que una clase opaque a la otra
+            raw_class_mask = (probs[class_id] >= conf_thresholds[class_id]).astype(np.uint8)
 
             # Apertura Morfológica: kernel más grande para manchas (5x5) para eliminar parches difusos de sombra
             k_size = 5 if class_id == 2 else 3
@@ -252,6 +258,8 @@ def analyze_skin(payload: AnalysisRequest):
             if len(valid_contours) > 0:
                 cv2.drawContours(cleaned_class_mask, valid_contours, -1, 1, thickness=-1)
                 anomalies_detected.add(class_name)
+                # Asignar el ID de clase (1: acné, 2: manchas, 3: arrugas) a los píxeles de la máscara indexada
+                indexed_mask[cleaned_class_mask == 1] = class_id
 
             # Pintar la máscara correspondiente a este canal en el overlay usando solo píxeles válidos
             overlay_mask[cleaned_class_mask == 1] = color_map[class_id]
@@ -267,7 +275,7 @@ def analyze_skin(payload: AnalysisRequest):
                 del item["size"]
                 visual_overlay.append(item)
                 
-        # Codificar máscara a base64
+        # Codificar máscara BGRA nativa a PNG base64 (OpenCV imencode convierte BGRA a RGBA PNG correctamente)
         _, encoded_img = cv2.imencode(".png", overlay_mask)
         mask_base64 = base64.b64encode(encoded_img).decode("utf-8")
         mask_image_url = f"data:image/png;base64,{mask_base64}"
@@ -283,11 +291,7 @@ def analyze_skin(payload: AnalysisRequest):
                 backend_dir = os.path.dirname(os.path.abspath(__file__))
                 parent_dir = os.path.dirname(backend_dir)
 
-                if os.path.exists(os.path.join(parent_dir, "images")):
-                    images_root = os.path.join(parent_dir, "images")
-                elif os.path.exists(os.path.join(backend_dir, "images")):
-                    images_root = os.path.join(backend_dir, "images")
-                elif os.path.exists("/app/images"):
+                if os.path.exists("/app/images"):
                     images_root = "/app/images"
                 else:
                     images_root = os.path.join(parent_dir, "images")
@@ -300,20 +304,20 @@ def analyze_skin(payload: AnalysisRequest):
                 os.makedirs(results_dir, exist_ok=True)
                 os.makedirs(mask_dir, exist_ok=True)
 
-                # 1. Foto original (_photo.jpg)
-                cv2.imwrite(os.path.join(photos_dir, f"{scan_tag}_photo.jpg"), cv2.cvtColor(face_512, cv2.COLOR_RGB2BGR))
+                # 1. Foto original (_photo.jpg) en BGR nativo
+                cv2.imwrite(os.path.join(photos_dir, f"{scan_tag}_photo.jpg"), face_512_bgr)
 
-                # 2. Máscara pura (_mask.png)
-                cv2.imwrite(os.path.join(mask_dir, f"{scan_tag}_mask.png"), cv2.cvtColor(overlay_mask, cv2.COLOR_RGBA2BGRA))
+                # 2. Máscara de mapa de bits indexada para reentrenamiento U-Net (Clases 0: Fondo, 1: Acné, 2: Manchas, 3: Arrugas)
+                cv2.imwrite(os.path.join(mask_dir, f"{scan_tag}_mask.png"), indexed_mask)
 
-                # 3. Resultado con máscara superpuesta (_result.jpg)
-                result_img = face_512.copy()
+                # 3. Resultado con máscara superpuesta (_result.jpg) en BGR nativo
+                result_bgr = face_512_bgr.copy()
                 alpha = overlay_mask[:, :, 3] / 255.0
                 for c_idx in range(3):
-                    result_img[:, :, c_idx] = (
-                        (1.0 - alpha) * result_img[:, :, c_idx] + alpha * overlay_mask[:, :, c_idx]
+                    result_bgr[:, :, c_idx] = (
+                        (1.0 - alpha) * result_bgr[:, :, c_idx] + alpha * overlay_mask[:, :, c_idx]
                     ).astype(np.uint8)
-                cv2.imwrite(os.path.join(results_dir, f"{scan_tag}_result.jpg"), cv2.cvtColor(result_img, cv2.COLOR_RGB2BGR))
+                cv2.imwrite(os.path.join(results_dir, f"{scan_tag}_result.jpg"), result_bgr)
                 print(f"[IMAGES] Imágenes guardadas con tag '{scan_tag}' ({len(anomalies_detected)} anomalías detectadas: {list(anomalies_detected)})")
             except Exception as img_err:
                 print(f"[IMAGES ERROR] Error al guardar imágenes de inferencia: {str(img_err)}")
