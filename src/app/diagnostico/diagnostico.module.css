@@ -16,6 +16,13 @@
   font-weight: 400;
 }
 
+.page,
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
 .page button, .page a { transition: 200ms ease; }
 .page button:focus-visible, .page a:focus-visible { outline: 3px solid rgb(169 104 166 / 35%); outline-offset: 3px; }
 
@@ -595,9 +602,35 @@
 }
 
 @media (max-width: 600px) {
+  .initialIntro {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .initialIntro > span {
+    width: 40px;
+    height: 40px;
+  }
+
+  .initialIntro > span svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .initialIntro h1 {
+    font-size: clamp(21px, 6vw, 24px);
+  }
+
+  .initialIntro p {
+    max-width: 40ch;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
   .captureColumn {
     display: flex;
     justify-content: center;
+    padding: 22px 16px 24px;
   }
 
   .captureInner,
@@ -611,7 +644,20 @@
   .resultCapture .sectionHeading {
     width: 100%;
     align-items: center;
+    margin-bottom: 15px;
     text-align: center;
+  }
+
+  .sectionHeading h1,
+  .sectionHeading h2 {
+    font-size: clamp(29px, 8.5vw, 33px);
+  }
+
+  .sectionHeading p {
+    max-width: 31ch;
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.4;
   }
 
   .sectionHeading > div {
@@ -631,20 +677,74 @@
   .resultCapture .viewport {
     width: 100%;
     max-width: 430px;
+    min-height: 400px;
+    aspect-ratio: auto;
     margin-inline: auto;
   }
 
   .placeholder {
     width: 100%;
+    min-height: 400px;
+    padding: 22px 14px;
     margin-inline: auto;
+  }
+
+  .cameraOrb {
+    width: 60px;
+    height: 60px;
+  }
+
+  .cameraOrb svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .placeholder h2 {
+    margin-top: 12px;
+    font-size: 22px;
+  }
+
+  .placeholder > p {
+    max-width: 31ch;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .faceSilhouette {
+    width: 68%;
+    height: 78%;
+  }
+
+  .captureHints {
+    margin-top: 13px;
+    gap: 5px;
+  }
+
+  .captureHints span {
+    padding: 5px 7px;
+    font-size: 9px;
   }
 
   .primaryActions,
   .belowActions,
   .resultCapture .belowActions {
+    width: calc(100% - 28px);
     max-width: 430px;
     margin-right: auto;
     margin-left: auto;
+  }
+
+  .primaryActions {
+    margin-top: 17px;
+    gap: 8px;
+  }
+
+  .primaryActions button,
+  .belowActions button {
+    min-height: 46px;
+    padding-inline: 18px;
+    font-size: 13px;
   }
 
   .formatNote,
@@ -653,5 +753,62 @@
     max-width: 430px;
     margin-right: auto;
     margin-left: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .page {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  .header {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+
+  .brandGroup {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .moduleLogo {
+    transform: scale(.78);
+  }
+
+  .visionBadge {
+    display: none;
+  }
+
+  .workspace,
+  .initialWorkspace,
+  .captureColumn,
+  .infoColumn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .initialIntro p {
+    display: none;
+  }
+
+  .initialIntro {
+    min-height: 66px;
+  }
+
+  .captureColumn {
+    padding-inline: 12px;
+  }
+
+  .viewport,
+  .placeholder {
+    min-height: 386px;
+  }
+
+  .captureHints span {
+    padding-inline: 6px;
+    font-size: 8px;
   }
 }
