@@ -642,7 +642,8 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
         width: '100%',
         height: '100%',
         maxHeight: '170px',
-        objectFit: 'contain'
+        objectFit: 'contain',
+        padding: '10px'
       }}
     />
   );
